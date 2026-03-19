@@ -4,7 +4,7 @@ import os
 
 import gradio as gr
 
-from rag_backend import ConfigurationError, get_cached_pipeline
+from rag_backend import ConfigurationError, enable_local_fallback_from_exception, get_cached_pipeline
 
 TITLE = "RAG Chatbot"
 SUBTITLE = "Ask grounded questions over the documents stored in this Space's data folder."
@@ -65,17 +65,21 @@ body, .gradio-container {
 def format_status() -> str:
     try:
         pipeline = get_cached_pipeline()
-        return (
-            "### Status\n"
-            f"Ready. Indexed **{pipeline.source_count}** files into **{pipeline.chunk_count}** chunks.\n\n"
-            f"Chat model: `{pipeline.chat_model}`\n\n"
-            f"Embedding model: `{pipeline.embedding_model}`"
-        )
+        status = [
+            "### Status",
+            f"Ready. Indexed **{pipeline.source_count}** files into **{pipeline.chunk_count}** chunks.",
+            f"Runtime: `{pipeline.provider}`",
+        ]
+        if pipeline.note:
+            status.append(pipeline.note)
+        status.append(f"Chat model: `{pipeline.chat_model}`")
+        status.append(f"Embedding model: `{pipeline.embedding_model}`")
+        return "\n\n".join(status)
     except ConfigurationError as exc:
         return (
             "### Status\n"
             f"Blocked: {exc}\n\n"
-            "Add `OPENAI_API_KEY` in the Space Secrets panel and commit your documents under `data/`."
+            "Add supported documents under `data/`, or set `OPENAI_API_KEY`, or let the local fallback models initialize."
         )
     except Exception as exc:
         return f"### Status\nInitialization failed: `{exc}`"
@@ -92,10 +96,16 @@ def respond(message: str, history) -> str:
         return (
             "The Space is not configured yet.\n\n"
             f"Reason: {exc}\n\n"
-            "Set `OPENAI_API_KEY` as a Space secret and add at least one `.txt`, `.md`, or `.pdf` file to `data/`."
+            "Add at least one `.txt`, `.md`, or `.pdf` file to `data/`, or provide a working `OPENAI_API_KEY`."
         )
     except Exception as exc:
-        return f"Unexpected runtime error: {exc}"
+        if enable_local_fallback_from_exception(exc):
+            try:
+                result = get_cached_pipeline().ask(message)
+            except Exception as retry_exc:
+                return f"Unexpected runtime error after local fallback: {retry_exc}"
+        else:
+            return f"Unexpected runtime error: {exc}"
 
     sources = "\n".join(f"- {source}" for source in result.sources) or "- No sources retrieved"
     return f"{result.answer}\n\n**Sources**\n{sources}"
@@ -125,7 +135,7 @@ with gr.Blocks(title=TITLE, fill_width=True) as demo:
     )
 
     gr.Markdown(
-        "This Space reads documents from the repository `data/` folder and uses OpenAI for embeddings and answer generation."
+        "This Space reads documents from the repository `data/` folder. It uses OpenAI when available and automatically falls back to local Hugging Face models when OpenAI quota is unavailable."
     )
 
     demo.load(fn=format_status, outputs=status)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -8,18 +9,25 @@ from typing import Any, Iterable
 
 from dotenv import load_dotenv
 from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader, TextLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableLambda
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+import torch
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_DOCS_DIR = PROJECT_ROOT / "data"
 DEFAULT_INDEX_DIR = PROJECT_ROOT / "vectorstore"
 DEFAULT_CHAT_MODEL = "gpt-4.1-mini"
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+DEFAULT_LOCAL_CHAT_MODEL = "google/flan-t5-small"
+DEFAULT_LOCAL_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+DEFAULT_PROVIDER = "auto"
 
 PROMPT_TEMPLATE = """You are a helpful retrieval-augmented assistant.
 Answer the user's question using only the provided context.
@@ -30,6 +38,8 @@ Context:
 
 Question: {question}
 """
+
+_LOCAL_FALLBACK_REASON: str | None = None
 
 
 class ConfigurationError(RuntimeError):
@@ -50,6 +60,8 @@ class RAGPipeline:
     embedding_model: str
     source_count: int
     chunk_count: int
+    provider: str
+    note: str | None = None
 
     def ask(self, question: str) -> AnswerResult:
         documents = self.retriever.invoke(question)
@@ -73,14 +85,6 @@ class RAGPipeline:
 
 def load_environment() -> None:
     load_dotenv()
-
-
-def ensure_openai_api_key() -> None:
-    if os.getenv("OPENAI_API_KEY"):
-        return
-    raise ConfigurationError(
-        "OPENAI_API_KEY is not set. Add it locally in .env or as a Hugging Face Space secret."
-    )
 
 
 def count_source_files(docs_dir: Path) -> int:
@@ -138,12 +142,23 @@ def split_documents(documents: list[Document]) -> list[Document]:
     return splitter.split_documents(documents)
 
 
+def sanitize_slug(value: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9._-]+", "-", value).strip("-").lower()
+
+
+def build_index_dir(index_root: Path, provider: str, embedding_model: str) -> Path:
+    return index_root / sanitize_slug(provider) / sanitize_slug(embedding_model)
+
+
 def load_or_build_vectorstore(
     docs_dir: Path,
-    index_dir: Path,
-    embeddings: OpenAIEmbeddings,
+    index_root: Path,
+    embeddings: Any,
     rebuild: bool,
+    provider: str,
+    embedding_model: str,
 ) -> tuple[FAISS, int, int]:
+    index_dir = build_index_dir(index_root, provider=provider, embedding_model=embedding_model)
     faiss_file = index_dir / "index.faiss"
     pickle_file = index_dir / "index.pkl"
     source_count = count_source_files(docs_dir)
@@ -186,19 +201,46 @@ def format_context(documents: Iterable[Document]) -> str:
     return "\n\n".join(parts)
 
 
-def build_generation_chain(llm: ChatOpenAI):
+def build_generation_chain(llm: Any):
     prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     return prompt | llm | StrOutputParser()
 
 
-def create_pipeline(
-    docs_dir: Path = DEFAULT_DOCS_DIR,
-    index_dir: Path = DEFAULT_INDEX_DIR,
-    rebuild: bool = False,
-) -> RAGPipeline:
-    load_environment()
-    ensure_openai_api_key()
+def openai_api_key_available() -> bool:
+    return bool(os.getenv("OPENAI_API_KEY"))
 
+
+def summarize_exception(exc: Exception) -> str:
+    message = " ".join(str(exc).split())
+    return message[:280] if len(message) > 280 else message
+
+
+def should_fallback_to_local(exc: Exception) -> bool:
+    message = summarize_exception(exc).lower()
+    markers = (
+        "insufficient_quota",
+        "error code: 429",
+        "rate limit",
+        "quota",
+        "billing",
+        "incorrect api key",
+        "authentication",
+        "openai",
+    )
+    return any(marker in message for marker in markers)
+
+
+def prefer_local_runtime(reason: str) -> None:
+    global _LOCAL_FALLBACK_REASON
+    _LOCAL_FALLBACK_REASON = reason
+
+
+def clear_local_runtime_preference() -> None:
+    global _LOCAL_FALLBACK_REASON
+    _LOCAL_FALLBACK_REASON = None
+
+
+def build_openai_pipeline(docs_dir: Path, index_root: Path, rebuild: bool) -> RAGPipeline:
     chat_model = os.getenv("OPENAI_MODEL", DEFAULT_CHAT_MODEL)
     embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
 
@@ -206,9 +248,11 @@ def create_pipeline(
     llm = ChatOpenAI(model=chat_model, temperature=0)
     vectorstore, source_count, chunk_count = load_or_build_vectorstore(
         docs_dir=docs_dir,
-        index_dir=index_dir,
+        index_root=index_root,
         embeddings=embeddings,
         rebuild=rebuild,
+        provider="openai",
+        embedding_model=embedding_model,
     )
 
     return RAGPipeline(
@@ -218,9 +262,118 @@ def create_pipeline(
         embedding_model=embedding_model,
         source_count=source_count,
         chunk_count=chunk_count,
+        provider="openai",
     )
+
+
+def build_local_pipeline(docs_dir: Path, index_root: Path, rebuild: bool, note: str | None = None) -> RAGPipeline:
+    chat_model = os.getenv("LOCAL_CHAT_MODEL", DEFAULT_LOCAL_CHAT_MODEL)
+    embedding_model = os.getenv("LOCAL_EMBEDDING_MODEL", DEFAULT_LOCAL_EMBEDDING_MODEL)
+
+    embeddings = HuggingFaceEmbeddings(
+        model_name=embedding_model,
+        model_kwargs={"device": "cpu"},
+    )
+    tokenizer = AutoTokenizer.from_pretrained(chat_model)
+    model = AutoModelForSeq2SeqLM.from_pretrained(chat_model)
+    model.eval()
+
+    def local_generate(prompt_value: Any) -> str:
+        prompt_text = prompt_value.to_string() if hasattr(prompt_value, "to_string") else str(prompt_value)
+        inputs = tokenizer(
+            prompt_text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=512,
+        )
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=196,
+                do_sample=False,
+            )
+        return tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+
+    llm = RunnableLambda(local_generate)
+
+    vectorstore, source_count, chunk_count = load_or_build_vectorstore(
+        docs_dir=docs_dir,
+        index_root=index_root,
+        embeddings=embeddings,
+        rebuild=rebuild,
+        provider="local",
+        embedding_model=embedding_model,
+    )
+
+    return RAGPipeline(
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
+        generation_chain=build_generation_chain(llm),
+        chat_model=chat_model,
+        embedding_model=embedding_model,
+        source_count=source_count,
+        chunk_count=chunk_count,
+        provider="local",
+        note=note,
+    )
+
+
+def create_pipeline(
+    docs_dir: Path = DEFAULT_DOCS_DIR,
+    index_dir: Path = DEFAULT_INDEX_DIR,
+    rebuild: bool = False,
+) -> RAGPipeline:
+    load_environment()
+    provider = os.getenv("RAG_PROVIDER", DEFAULT_PROVIDER).strip().lower()
+
+    if _LOCAL_FALLBACK_REASON and provider == "auto":
+        return build_local_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild, note=_LOCAL_FALLBACK_REASON)
+
+    if provider == "local":
+        return build_local_pipeline(
+            docs_dir=docs_dir,
+            index_root=index_dir,
+            rebuild=rebuild,
+            note="Local runtime selected via RAG_PROVIDER=local.",
+        )
+
+    if provider == "openai":
+        if not openai_api_key_available():
+            raise ConfigurationError("RAG_PROVIDER=openai requires OPENAI_API_KEY to be set.")
+        return build_openai_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild)
+
+    if not openai_api_key_available():
+        return build_local_pipeline(
+            docs_dir=docs_dir,
+            index_root=index_dir,
+            rebuild=rebuild,
+            note="OPENAI_API_KEY is not set. Using local fallback models.",
+        )
+
+    try:
+        clear_local_runtime_preference()
+        return build_openai_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild)
+    except Exception as exc:
+        if not should_fallback_to_local(exc):
+            raise
+
+        reason = f"OpenAI unavailable: {summarize_exception(exc)}. Using local fallback models."
+        prefer_local_runtime(reason)
+        return build_local_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild, note=reason)
 
 
 @lru_cache(maxsize=1)
 def get_cached_pipeline() -> RAGPipeline:
     return create_pipeline()
+
+
+def reset_cached_pipeline() -> None:
+    get_cached_pipeline.cache_clear()
+
+
+def enable_local_fallback_from_exception(exc: Exception) -> bool:
+    if not should_fallback_to_local(exc):
+        return False
+
+    prefer_local_runtime(f"OpenAI unavailable: {summarize_exception(exc)}. Using local fallback models.")
+    reset_cached_pipeline()
+    return True

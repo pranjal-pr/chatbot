@@ -1,5 +1,5 @@
 .env
 .venv/
 __pycache__/
-vectorstore/index.faiss
-vectorstore/index.pkl
+vectorstore/*
+!vectorstore/.gitkeep
