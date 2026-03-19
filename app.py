@@ -88,13 +88,19 @@ body::after {
 }
 
 .workspace-grid {
+    display: grid !important;
+    grid-template-columns: 230px 320px minmax(0, 1fr);
     align-items: start;
     gap: 1.1rem;
 }
 
 .feature-column,
-.sidebar-column {
+.sidebar-column,
+.main-column {
     align-self: start;
+    min-width: 0 !important;
+    width: auto !important;
+    flex: none !important;
 }
 
 .feature-stack,
@@ -111,6 +117,7 @@ body::after {
     top: 1rem;
     display: grid;
     gap: 1rem;
+    padding-top: 4.2rem;
 }
 
 .rail-card {
@@ -141,6 +148,18 @@ body::after {
     background: #2a2730;
     color: #f4edf6;
     font-size: 0.82rem;
+}
+
+.feature-stack .rail-card:nth-child(1) {
+    transform: translateX(-0.2rem);
+}
+
+.feature-stack .rail-card:nth-child(2) {
+    transform: translateX(0.15rem);
+}
+
+.feature-stack .rail-card:nth-child(3) {
+    transform: translateX(-0.35rem);
 }
 
 .sidebar-column {
@@ -253,6 +272,7 @@ body::after {
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
+    margin-bottom: 0.35rem;
 }
 
 .stage-pill {
@@ -265,6 +285,24 @@ body::after {
     border: 1px solid rgba(255, 255, 255, 0.06);
     color: var(--text-main);
     font-size: 0.92rem;
+}
+
+.topbar-actions {
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
+
+.ghost-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(3, 3, 4, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text-soft);
+    font-size: 0.82rem;
 }
 
 .stage-hero {
@@ -373,6 +411,7 @@ body::after {
     margin-top: 1rem;
     border-radius: 1.9rem;
     background: linear-gradient(180deg, rgba(12, 10, 14, 0.96), rgba(9, 8, 11, 0.98));
+    min-height: 24rem;
 }
 
 .chat-history [data-testid="chatbot"] {
@@ -380,11 +419,14 @@ body::after {
     background: transparent !important;
 }
 
+.chat-history .wrap,
+.chat-history .bubble-wrap,
+.chat-history .message-wrap {
+    background: transparent !important;
+}
+
 .footer-note {
-    margin-top: 0.9rem;
-    text-align: center;
-    color: #6b4f6c;
-    font-size: 0.93rem;
+    display: none !important;
 }
 
 footer {
@@ -392,12 +434,20 @@ footer {
 }
 
 @media (max-width: 1500px) {
+    .workspace-grid {
+        grid-template-columns: 320px minmax(0, 1fr);
+    }
+
     .feature-column {
         display: none !important;
     }
 }
 
 @media (max-width: 1120px) {
+    .workspace-grid {
+        grid-template-columns: 1fr;
+    }
+
     .sidebar-column {
         position: static;
     }
@@ -564,12 +614,16 @@ with gr.Blocks(
 
                 status = gr.Markdown(elem_classes=["status-shell"])
 
-            with gr.Column(scale=7, min_width=760):
+            with gr.Column(scale=7, min_width=760, elem_classes=["main-column"]):
                 with gr.Group(elem_classes=["stage-shell"]):
                     gr.HTML(
                         f"""
 <div class="stage-topbar">
   <div class="stage-pill">ChatGPT v4.0</div>
+  <div class="topbar-actions">
+    <span class="ghost-pill">Configuration</span>
+    <span class="ghost-pill">Export</span>
+  </div>
 </div>
 
 <div class="stage-hero">
