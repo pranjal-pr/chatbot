@@ -2,9 +2,8 @@
 title: RAG Chatbot
 colorFrom: blue
 colorTo: green
-sdk: gradio
-python_version: "3.11"
-app_file: app.py
+sdk: docker
+app_port: 7860
 fullWidth: true
 short_description: Grounded Q&A over the documents stored in this repository.
 tags:
@@ -21,7 +20,7 @@ This project is a minimal Retrieval-Augmented Generation (RAG) chatbot in Python
 - LangChain for document loading, chunking, and orchestration
 - OpenAI for embeddings and answer generation
 - FAISS for local vector search
-- Gradio for the Hugging Face Spaces web UI
+- Gradio for the web UI, packaged inside a Docker Space
 
 ## What it does
 
@@ -29,11 +28,11 @@ This project is a minimal Retrieval-Augmented Generation (RAG) chatbot in Python
 2. Splits them into chunks of 1000 characters with 200-character overlap
 3. Builds a local FAISS vector index
 4. Retrieves the top 3 most relevant chunks for each question
-5. Passes that context to an OpenAI chat model and answers in either a terminal app or a Hugging Face Space
+5. Passes that context to an OpenAI chat model and answers in either a terminal app or a Docker-based Hugging Face Space
 
 ## Deploy to Hugging Face Spaces
 
-1. Create a new Hugging Face Space and choose the `Gradio` SDK.
+1. Create a new Hugging Face Space and choose the `Docker` SDK.
 2. Push this repository to GitHub.
 3. In the GitHub repo, add an Actions secret named `HF_TOKEN` with write access to the target Space.
 4. In the GitHub repo, add an Actions variable named `HF_SPACE_REPO` with the value `username/space-name`.
@@ -41,7 +40,7 @@ This project is a minimal Retrieval-Augmented Generation (RAG) chatbot in Python
 6. Commit your knowledge base files under `data/`.
 7. Push to the `main` branch on GitHub. After CI passes, the workflow in `.github/workflows/deploy-space.yml` will force-push that branch to the Hugging Face Space.
 
-The Space reads its configuration from environment variables, which matches Hugging Face Spaces secrets behavior.
+The Space reads its configuration from environment variables, which matches Hugging Face Spaces secrets behavior. The Docker container serves the Gradio app on port `7860`, which matches the `app_port` configured above.
 
 ## GitHub CI/CD
 
@@ -75,9 +74,17 @@ After the first run, the FAISS index is stored locally in `vectorstore/`. Subseq
 python rag_chatbot.py
 ```
 
+## Run Locally with Docker
+
+```powershell
+docker build -t rag-chatbot .
+docker run --rm -p 7860:7860 --env-file .env rag-chatbot
+```
+
 ## Notes
 
 - Use `--rebuild` whenever you add or change documents.
 - The script defaults to `gpt-4.1-mini` for chat and `text-embedding-3-small` for embeddings.
 - Supported document types are `.txt`, `.md`, and `.pdf`.
 - The Space UI is defined in `app.py`, while the shared RAG runtime lives in `rag_backend.py`.
+- `Dockerfile` is the Hugging Face Space entrypoint for the Docker deployment path.

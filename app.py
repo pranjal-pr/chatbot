@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import gradio as gr
 
 from rag_backend import ConfigurationError, get_cached_pipeline
@@ -131,4 +133,9 @@ with gr.Blocks(title=TITLE, fill_width=True) as demo:
 
 if __name__ == "__main__":
     demo.queue()
-    demo.launch(theme=THEME, css=CUSTOM_CSS)
+    demo.launch(
+        server_name=os.getenv("GRADIO_SERVER_NAME", "0.0.0.0"),
+        server_port=int(os.getenv("GRADIO_SERVER_PORT", "7860")),
+        theme=THEME,
+        css=CUSTOM_CSS,
+    )
