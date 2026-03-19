@@ -46,6 +46,98 @@ body, .gradio-container {
     padding: 1.15rem 0 1.8rem 0;
 }
 
+.workspace-grid {
+    align-items: start;
+    gap: 1rem;
+}
+
+.sidebar-column {
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+}
+
+.sidebar-panel {
+    padding: 1.2rem;
+    border-radius: 28px;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 1.1rem;
+}
+
+.sidebar-mark {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(95, 222, 214, 0.18), rgba(58, 97, 202, 0.28));
+    border: 1px solid rgba(182, 231, 233, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ecfeff;
+}
+
+.sidebar-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f5fcfd;
+}
+
+.sidebar-subtitle {
+    margin: 0.2rem 0 0 0;
+    line-height: 1.5;
+    color: #aecdd3;
+}
+
+.sidebar-nav {
+    display: grid;
+    gap: 0.65rem;
+    margin: 1rem 0 1.1rem 0;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 0.9rem;
+    border-radius: 16px;
+    background: rgba(15, 35, 44, 0.78);
+    border: 1px solid rgba(154, 227, 214, 0.10);
+    color: #e5f4f6;
+}
+
+.sidebar-link span:last-child {
+    color: #90d7d6;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.sidebar-note {
+    margin: 0 0 1rem 0;
+    padding: 0.95rem 1rem;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(17, 43, 43, 0.76), rgba(10, 28, 34, 0.82));
+    border: 1px solid rgba(139, 215, 214, 0.14);
+    color: #cfe6e9;
+    line-height: 1.65;
+}
+
+.sidebar-section-title {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.82rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #8bd7d6;
+}
+
 .hero {
     position: relative;
     overflow: hidden;
@@ -145,9 +237,8 @@ body, .gradio-container {
 }
 
 .main-grid {
-    align-items: stretch;
+    display: grid;
     gap: 1rem;
-    margin-top: 1rem;
 }
 
 .panel {
@@ -161,7 +252,7 @@ body, .gradio-container {
 }
 
 .status-panel {
-    min-height: 236px;
+    min-height: 260px;
 }
 
 .stack-panel h3,
@@ -240,6 +331,14 @@ footer {
 }
 
 @media (max-width: 1180px) {
+    .workspace-grid {
+        gap: 0.9rem;
+    }
+
+    .sidebar-column {
+        position: static;
+    }
+
     .hero-grid,
     .info-grid {
         grid-template-columns: 1fr;
@@ -261,6 +360,11 @@ footer {
 
     .hero {
         padding: 1.35rem;
+        border-radius: 24px;
+    }
+
+    .sidebar-panel {
+        padding: 1rem;
         border-radius: 24px;
     }
 
@@ -331,8 +435,63 @@ with gr.Blocks(
     fill_height=True,
 ) as demo:
     with gr.Column(elem_classes=["app-shell"]):
-        gr.HTML(
-            f"""
+        with gr.Row(elem_classes=["workspace-grid"], equal_height=False):
+            with gr.Column(scale=3, min_width=320, elem_classes=["sidebar-column"]):
+                gr.HTML(
+                    """
+<aside class="panel sidebar-panel">
+  <div class="sidebar-brand">
+    <div class="sidebar-mark">R</div>
+    <div>
+      <p class="sidebar-title">RAG Console</p>
+      <p class="sidebar-subtitle">Grounded chat over the documents shipped with this Space.</p>
+    </div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="sidebar-link"><span>Retrieval Flow</span><span>Live</span></div>
+    <div class="sidebar-link"><span>FAISS Index</span><span>Local</span></div>
+    <div class="sidebar-link"><span>Source Types</span><span>TXT / MD / PDF</span></div>
+  </div>
+
+  <p class="sidebar-section-title">Operator Notes</p>
+  <p class="sidebar-note">Use the chat panel to interrogate the indexed documents. Drop new files into <code>data/</code> and redeploy to refresh the knowledge base.</p>
+</aside>
+"""
+                )
+
+                status = gr.Markdown(elem_classes=["panel", "status-panel"])
+
+                gr.HTML(
+                    """
+<section class="panel stack-panel">
+  <h3>Sidebar Guide</h3>
+  <div class="info-grid">
+    <div class="mini-card">
+      <strong>Ask narrow questions</strong>
+      Specific prompts usually retrieve tighter chunks and give cleaner grounded answers.
+    </div>
+    <div class="mini-card">
+      <strong>Use the sources</strong>
+      Each answer cites the retrieved files so you can validate what the model used.
+    </div>
+    <div class="mini-card">
+      <strong>Replace the starter docs</strong>
+      The sample file is only there to prove the pipeline works end to end.
+    </div>
+    <div class="mini-card">
+      <strong>Fallback stays online</strong>
+      If OpenAI quota is unavailable, the Space keeps running on local models.
+    </div>
+  </div>
+</section>
+"""
+                )
+
+            with gr.Column(scale=9, min_width=720):
+                with gr.Column(elem_classes=["main-grid"]):
+                    gr.HTML(
+                        f"""
 <section class="hero">
   <div class="hero-grid">
     <div class="hero-copy">
@@ -355,53 +514,22 @@ with gr.Blocks(
   </div>
 </section>
 """
-        )
-
-        with gr.Row(elem_classes=["main-grid"], equal_height=True):
-            with gr.Column(scale=4, min_width=320):
-                status = gr.Markdown(elem_classes=["panel", "status-panel"])
-
-                gr.HTML(
-                    """
-<section class="panel stack-panel">
-  <h3>How To Use It</h3>
-  <div class="info-grid">
-    <div class="mini-card">
-      <strong>Ask specific questions</strong>
-      Use concrete prompts about your documents to get tighter retrieval and better answers.
-    </div>
-    <div class="mini-card">
-      <strong>Bring real knowledge</strong>
-      Replace the starter file with your own docs in `data/` for meaningful results.
-    </div>
-    <div class="mini-card">
-      <strong>Watch the sources</strong>
-      Every answer includes retrieved files so you can verify where the response came from.
-    </div>
-    <div class="mini-card">
-      <strong>Fallback is automatic</strong>
-      If OpenAI is unavailable, the app switches to local Hugging Face models instead of breaking.
-    </div>
-  </div>
-</section>
-"""
-                )
-
-            with gr.Column(scale=8, min_width=600):
-                with gr.Group(elem_classes=["panel", "chat-frame"]):
-                    gr.Markdown("### Ask The Knowledge Base")
-                    gr.ChatInterface(
-                        fn=respond,
-                        chatbot=gr.Chatbot(height=560, layout="bubble", buttons=["copy"]),
-                        textbox=gr.Textbox(
-                            placeholder="Ask about the indexed documents...",
-                            container=False,
-                            scale=7,
-                        ),
-                        examples=EXAMPLE_QUESTIONS,
-                        fill_width=True,
-                        fill_height=True,
                     )
+
+                    with gr.Group(elem_classes=["panel", "chat-frame"]):
+                        gr.Markdown("### Ask The Knowledge Base")
+                        gr.ChatInterface(
+                            fn=respond,
+                            chatbot=gr.Chatbot(height=560, layout="bubble", buttons=["copy"]),
+                            textbox=gr.Textbox(
+                                placeholder="Ask about the indexed documents...",
+                                container=False,
+                                scale=7,
+                            ),
+                            examples=EXAMPLE_QUESTIONS,
+                            fill_width=True,
+                            fill_height=True,
+                        )
 
         gr.Markdown(
             "The Space reads documents from the repository `data/` folder, builds a FAISS index, and answers with retrieved context. OpenAI is used when available; otherwise the app falls back to local Hugging Face models.",
