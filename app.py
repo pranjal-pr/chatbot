@@ -22,7 +22,12 @@ body, .gradio-container {
 }
 
 .gradio-container {
-    max-width: 980px !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 1.25rem 2rem 1.25rem !important;
+    min-height: 100vh;
+    box-sizing: border-box;
 }
 
 .hero {
