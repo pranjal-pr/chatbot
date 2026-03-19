@@ -215,6 +215,17 @@ def summarize_exception(exc: Exception) -> str:
     return message[:280] if len(message) > 280 else message
 
 
+def humanize_openai_issue(exc: Exception) -> str:
+    message = summarize_exception(exc).lower()
+    if "insufficient_quota" in message or "quota" in message or "billing" in message:
+        return "OpenAI quota is unavailable"
+    if "invalid_api_key" in message or "incorrect api key" in message or "authentication" in message:
+        return "OpenAI authentication failed"
+    if "rate limit" in message or "error code: 429" in message:
+        return "OpenAI rate limit was reached"
+    return "OpenAI is unavailable"
+
+
 def should_fallback_to_local(exc: Exception) -> bool:
     message = summarize_exception(exc).lower()
     markers = (
@@ -356,7 +367,7 @@ def create_pipeline(
         if not should_fallback_to_local(exc):
             raise
 
-        reason = f"OpenAI unavailable: {summarize_exception(exc)}. Using local fallback models."
+        reason = f"{humanize_openai_issue(exc)}. Using local fallback models."
         prefer_local_runtime(reason)
         return build_local_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild, note=reason)
 
@@ -374,6 +385,6 @@ def enable_local_fallback_from_exception(exc: Exception) -> bool:
     if not should_fallback_to_local(exc):
         return False
 
-    prefer_local_runtime(f"OpenAI unavailable: {summarize_exception(exc)}. Using local fallback models.")
+    prefer_local_runtime(f"{humanize_openai_issue(exc)}. Using local fallback models.")
     reset_cached_pipeline()
     return True
