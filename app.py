@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from html import escape
 from pathlib import Path
 
@@ -409,6 +410,10 @@ def refresh_mode_ui(mode: str) -> tuple[str, str]:
     return format_sidebar_meta(mode), format_header_pills(mode)
 
 
+def normalize_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value.strip().lower())
+
+
 def should_use_rag_auto(message: str) -> bool:
     files = _indexed_files()
     if not files:
@@ -437,8 +442,6 @@ def should_use_rag_auto(message: str) -> bool:
         ".md",
         ".txt",
         "supported",
-        "this chatbot",
-        "this app",
         "in the file",
         "based on",
     )
@@ -446,6 +449,64 @@ def should_use_rag_auto(message: str) -> bool:
         return True
 
     return any(path.name.lower() in text or path.stem.lower() in text for path in files)
+
+
+def should_bypass_local_chat_model(message: str) -> bool:
+    text = normalize_text(message)
+    patterns = (
+        r"^(hi|hello|hey|yo|good morning|good afternoon|good evening)\b",
+        r"^(i am|i'm|my name is)\b",
+        r"\b(student|study|studying|exam|homework|assignment)\b",
+        r"\b(what can you do|who are you|tell me about (yourself|this chatbot|this app))\b",
+        r"\b(can you help me|help me)\b",
+    )
+    return any(re.search(pattern, text) for pattern in patterns)
+
+
+def is_low_quality_local_chat_answer(message: str, answer: str) -> bool:
+    normalized_message = normalize_text(message)
+    normalized_answer = normalize_text(answer)
+
+    if not normalized_answer:
+        return True
+    if normalized_answer == normalized_message:
+        return True
+    if normalized_answer in {"yes", "no", "maybe", "...", ".", ".."}:
+        return True
+    if "answer the user's question" in normalized_answer:
+        return True
+    if len(normalized_answer.split()) <= 3 and not any(char.isdigit() for char in normalized_answer):
+        return True
+    if normalized_answer.endswith("?") and not normalized_message.endswith("?"):
+        return True
+    return False
+
+
+def build_local_chat_fallback(message: str) -> str:
+    text = normalize_text(message)
+
+    if re.search(r"^(hi|hello|hey|yo|good morning|good afternoon|good evening)\b", text):
+        return "Hi. What do you want help with?"
+
+    if re.search(r"^(i am|i'm|my name is)\b", text):
+        if "student" in text:
+            return "Got it. What do you want help with as a student? I can explain concepts, summarize material, or help you study."
+        return "Got it. What would you like help with?"
+
+    if re.search(r"\b(student|study|studying|exam|homework|assignment)\b", text):
+        return "Yes. I can help you study, explain concepts, summarize notes, and break down problems step by step. What subject are you working on?"
+
+    if re.search(r"\b(what can you do|who are you|tell me about (yourself|this chatbot|this app))\b", text):
+        return (
+            "I can work in three modes: `Auto`, `Chat only`, and `RAG only`. "
+            "`Chat only` gives direct answers, `RAG only` answers from indexed documents with sources, "
+            "and `Auto` switches between them based on your prompt."
+        )
+
+    if re.search(r"\b(can you help me|help me)\b", text):
+        return "Yes. Tell me the task, question, or topic, and I’ll help directly or use the indexed documents when needed."
+
+    return "Tell me what you want to work on, and I’ll answer directly or use the indexed documents when grounding is needed."
 
 
 def answer_with_rag(message: str) -> str:
@@ -470,17 +531,30 @@ def answer_with_rag(message: str) -> str:
 
 
 def answer_with_chat(message: str) -> str:
+    runtime = get_cached_chat_runtime()
+
+    if runtime.provider == "local" and should_bypass_local_chat_model(message):
+        return build_local_chat_fallback(message)
+
     try:
-        return get_cached_chat_runtime().ask(message)
+        answer = runtime.ask(message)
     except ConfigurationError as exc:
         return f"The chat runtime is not configured yet.\n\nReason: {exc}"
     except Exception as exc:
         if enable_local_fallback_from_exception(exc):
             try:
-                return get_cached_chat_runtime().ask(message)
+                runtime = get_cached_chat_runtime()
+                if runtime.provider == "local" and should_bypass_local_chat_model(message):
+                    return build_local_chat_fallback(message)
+                answer = runtime.ask(message)
             except Exception as retry_exc:
                 return f"Unexpected runtime error after local fallback: {retry_exc}"
-        return f"Unexpected runtime error: {exc}"
+        else:
+            return f"Unexpected runtime error: {exc}"
+
+    if runtime.provider == "local" and is_low_quality_local_chat_answer(message, answer):
+        return build_local_chat_fallback(message)
+    return answer
 
 
 def answer_question(message: str, mode: str) -> str:
