@@ -6,10 +6,16 @@ from pathlib import Path
 
 import gradio as gr
 
-from rag_backend import ConfigurationError, enable_local_fallback_from_exception, get_cached_pipeline
+from rag_backend import (
+    ConfigurationError,
+    enable_local_fallback_from_exception,
+    get_cached_chat_runtime,
+    get_cached_pipeline,
+)
 
 TITLE = "RAG Chatbot"
-SUBTITLE = "Grounded answers from your repository documents."
+SUBTITLE = "Switch between direct chat and grounded retrieval."
+MODE_OPTIONS = ["Auto", "Chat only", "RAG only"]
 THEME = gr.themes.Base(primary_hue="violet", secondary_hue="slate", neutral_hue="slate").set(
     body_background_fill="#050507",
     body_text_color="#f5f7fb",
@@ -133,6 +139,41 @@ body, .gradio-container {
     border: 1px solid var(--border) !important;
     color: var(--text) !important;
     box-shadow: none !important;
+}
+
+.mode-switch {
+    margin-top: 1rem;
+    padding: 0.95rem 1rem !important;
+    border-radius: 20px;
+    background: var(--panel-soft) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.mode-switch label,
+.mode-switch span,
+.mode-switch p {
+    color: var(--text) !important;
+}
+
+.mode-switch [data-testid="block-label"] {
+    margin-bottom: 0.5rem !important;
+    font-size: 0.95rem !important;
+}
+
+.mode-switch .wrap {
+    gap: 0.55rem !important;
+}
+
+.mode-switch .wrap label {
+    border-radius: 999px !important;
+    background: #12151b !important;
+    border: 1px solid var(--border) !important;
+    padding: 0.55rem 0.9rem !important;
+}
+
+.mode-switch .wrap label:has(input:checked) {
+    background: rgba(143, 124, 255, 0.16) !important;
+    border-color: rgba(143, 124, 255, 0.55) !important;
 }
 
 .sidebar-meta {
@@ -323,12 +364,24 @@ def format_status() -> str:
     )
 
 
-def format_sidebar_meta() -> str:
+def normalize_mode(mode: str | None) -> str:
+    return mode if mode in MODE_OPTIONS else "Auto"
+
+
+def mode_summary(mode: str) -> str:
+    labels = {
+        "Auto": "Adaptive",
+        "Chat only": "Direct",
+        "RAG only": "Grounded",
+    }
+    return labels[normalize_mode(mode)]
+
+
+def format_sidebar_meta(mode: str) -> str:
     files = _indexed_files()
     rows = [
-        ("Mode", "Grounded"),
+        ("Mode", mode_summary(mode)),
         ("Files", str(len(files))),
-        ("Fallback", "Local"),
         ("Types", ".txt .md .pdf"),
     ]
     lines = "".join(
@@ -338,15 +391,66 @@ def format_sidebar_meta() -> str:
     return f"<div class='sidebar-meta'>{lines}</div>"
 
 
-def format_header_pills() -> str:
-    pills = ["Grounded answers", f"Files: {len(_indexed_files())}", "Local fallback"]
+def format_header_pills(mode: str) -> str:
+    files = len(_indexed_files())
+    mode = normalize_mode(mode)
+    if mode == "Chat only":
+        pills = ["Chat only", "Direct answers"]
+    elif mode == "RAG only":
+        pills = ["RAG only", f"Files: {files}"]
+    else:
+        pills = ["Auto mode", f"Files: {files}", "Chat + RAG"]
     items = "".join(f"<span class='status-pill'>{escape(pill)}</span>" for pill in pills)
     return f"<div class='header-pills'>{items}</div>"
 
 
-def answer_question(message: str) -> str:
-    if not message.strip():
-        return "Ask a question about the indexed documents."
+def refresh_mode_ui(mode: str) -> tuple[str, str]:
+    mode = normalize_mode(mode)
+    return format_sidebar_meta(mode), format_header_pills(mode)
+
+
+def should_use_rag_auto(message: str) -> bool:
+    files = _indexed_files()
+    if not files:
+        return False
+
+    text = message.lower()
+    keywords = (
+        "document",
+        "documents",
+        "doc",
+        "docs",
+        "repository",
+        "repo",
+        "file",
+        "files",
+        "data",
+        "dataset",
+        "source",
+        "sources",
+        "indexed",
+        "knowledge",
+        "context",
+        "grounded",
+        "readme",
+        ".pdf",
+        ".md",
+        ".txt",
+        "supported",
+        "this chatbot",
+        "this app",
+        "in the file",
+        "based on",
+    )
+    if any(keyword in text for keyword in keywords):
+        return True
+
+    return any(path.name.lower() in text or path.stem.lower() in text for path in files)
+
+
+def answer_with_rag(message: str) -> str:
+    if not _indexed_files():
+        return "No indexed documents are available for RAG yet."
 
     try:
         result = get_cached_pipeline().ask(message)
@@ -365,12 +469,40 @@ def answer_question(message: str) -> str:
     return f"{result.answer}\n\n**Sources**\n{sources}"
 
 
-def submit_chat(message: str, history: list[dict] | None) -> tuple[list[dict], str, gr.update]:
+def answer_with_chat(message: str) -> str:
+    try:
+        return get_cached_chat_runtime().ask(message)
+    except ConfigurationError as exc:
+        return f"The chat runtime is not configured yet.\n\nReason: {exc}"
+    except Exception as exc:
+        if enable_local_fallback_from_exception(exc):
+            try:
+                return get_cached_chat_runtime().ask(message)
+            except Exception as retry_exc:
+                return f"Unexpected runtime error after local fallback: {retry_exc}"
+        return f"Unexpected runtime error: {exc}"
+
+
+def answer_question(message: str, mode: str) -> str:
+    if not message.strip():
+        return "Ask something to start the conversation."
+
+    mode = normalize_mode(mode)
+    if mode == "Chat only":
+        return answer_with_chat(message)
+    if mode == "RAG only":
+        return answer_with_rag(message)
+    if should_use_rag_auto(message):
+        return answer_with_rag(message)
+    return answer_with_chat(message)
+
+
+def submit_chat(message: str, history: list[dict] | None, mode: str) -> tuple[list[dict], str, gr.update]:
     history = history or []
     if not message.strip():
         return history, "", gr.update(visible=bool(history))
 
-    answer = answer_question(message)
+    answer = answer_question(message, mode)
     updated = history + [
         {"role": "user", "content": message},
         {"role": "assistant", "content": answer},
@@ -393,12 +525,19 @@ with gr.Blocks(title=TITLE, fill_width=True, fill_height=True) as demo:
   <div class="brand-mark"></div>
   <div>
     <h1>RAG Chatbot</h1>
-    <p>Minimal grounded chat over your repository documents.</p>
+    <p>Direct chat or grounded retrieval.</p>
   </div>
 </div>
 """
                     )
                     new_chat = gr.Button("+ New chat", elem_classes=["new-chat-btn"], variant="secondary")
+                    mode_selector = gr.Radio(
+                        MODE_OPTIONS,
+                        value="Auto",
+                        label="Mode",
+                        container=True,
+                        elem_classes=["mode-switch"],
+                    )
                     sidebar_meta = gr.HTML()
 
             with gr.Column(scale=8, min_width=700, elem_classes=["main-col"]):
@@ -439,17 +578,17 @@ with gr.Blocks(title=TITLE, fill_width=True, fill_height=True) as demo:
 
         send_button.click(
             submit_chat,
-            inputs=[message_box, chatbot],
+            inputs=[message_box, chatbot, mode_selector],
             outputs=[chatbot, message_box, chat_shell],
         )
         message_box.submit(
             submit_chat,
-            inputs=[message_box, chatbot],
+            inputs=[message_box, chatbot, mode_selector],
             outputs=[chatbot, message_box, chat_shell],
         )
         new_chat.click(clear_chat, outputs=[chatbot, message_box, chat_shell])
-        demo.load(fn=format_sidebar_meta, outputs=sidebar_meta)
-        demo.load(fn=format_header_pills, outputs=header_pills)
+        demo.load(lambda: refresh_mode_ui("Auto"), outputs=[sidebar_meta, header_pills])
+        mode_selector.change(refresh_mode_ui, inputs=mode_selector, outputs=[sidebar_meta, header_pills])
 
 
 if __name__ == "__main__":
