@@ -10,7 +10,24 @@ from rag_backend import ConfigurationError, enable_local_fallback_from_exception
 
 TITLE = "RAG Chatbot"
 SUBTITLE = "Ask grounded questions over the documents stored in this Space's data folder."
-THEME = gr.themes.Soft(primary_hue="gray", secondary_hue="gray")
+THEME = gr.themes.Base(primary_hue="violet", secondary_hue="slate", neutral_hue="slate").set(
+    body_background_fill="#050507",
+    body_text_color="#f5f7fb",
+    body_text_color_subdued="#aeb5c2",
+    background_fill_primary="#0f1013",
+    background_fill_secondary="#14161a",
+    block_background_fill="#0f1013",
+    block_border_color="#242833",
+    block_label_text_color="#f5f7fb",
+    input_background_fill="#13151a",
+    input_border_color="#242833",
+    input_border_color_focus="#8f7cff",
+    button_primary_background_fill="#8f7cff",
+    button_primary_text_color="#050507",
+    button_secondary_background_fill="#181b22",
+    button_secondary_text_color="#f5f7fb",
+    button_secondary_border_color="#242833",
+)
 EXAMPLE_ACTIONS = [
     ("Overview", "Give me a concise overview of the indexed documents."),
     ("Summarize", "Summarize the most important points in the indexed documents."),
@@ -47,10 +64,26 @@ body, .gradio-container {
         linear-gradient(180deg, #060607 0%, #09090b 100%) !important;
 }
 
+.gradio-container,
+.gradio-container * {
+    color: inherit;
+}
+
 .gradio-container {
     max-width: none !important;
     margin: 0 !important;
     padding: 1rem !important;
+}
+
+.gradio-container .gr-block,
+.gradio-container .block,
+.gradio-container .gr-box,
+.gradio-container .gr-group,
+.gradio-container .form,
+.gradio-container .wrap,
+.gradio-container .contain {
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 .app-shell {
@@ -81,6 +114,14 @@ body, .gradio-container {
     border: 1px solid var(--border);
 }
 
+.sidebar,
+.sidebar > div,
+.sidebar .gr-block,
+.sidebar .gr-box,
+.sidebar .gr-group {
+    background: rgba(12, 13, 16, 0.96) !important;
+}
+
 .brand {
     display: flex;
     align-items: center;
@@ -107,6 +148,15 @@ body, .gradio-container {
     line-height: 1.65;
 }
 
+.brand h1,
+.sidebar h1,
+.sidebar h2,
+.sidebar h3,
+.sidebar strong,
+.main-canvas h2 {
+    color: var(--text) !important;
+}
+
 .sidebar-note {
     margin: 1rem 0 1.1rem 0;
     font-size: 0.95rem;
@@ -129,6 +179,25 @@ body, .gradio-container {
     border: 1px solid var(--border);
 }
 
+.status-card,
+.status-card > div,
+.status-card .gr-block,
+.status-card .gr-box {
+    background: var(--panel-soft) !important;
+}
+
+.status-card .prose,
+.status-card .prose *,
+.status-card .markdown,
+.status-card .markdown * {
+    color: var(--text) !important;
+}
+
+.status-card code {
+    background: rgba(143, 124, 255, 0.12) !important;
+    color: #d8d1ff !important;
+}
+
 .new-chat-btn button,
 .quick-btn button {
     border-radius: 999px !important;
@@ -149,6 +218,14 @@ body, .gradio-container {
     border-radius: 32px;
     background: linear-gradient(180deg, rgba(14, 15, 18, 0.98), rgba(8, 9, 11, 0.98));
     border: 1px solid var(--border);
+}
+
+.main-canvas,
+.main-canvas > div,
+.main-canvas .gr-block,
+.main-canvas .gr-box,
+.main-canvas .gr-group {
+    background: linear-gradient(180deg, rgba(14, 15, 18, 0.98), rgba(8, 9, 11, 0.98)) !important;
 }
 
 .hero {
@@ -205,13 +282,43 @@ body, .gradio-container {
     overflow: hidden;
 }
 
+.chat-card,
+.chat-card > div,
+.chat-card .gr-block,
+.chat-card .gr-box,
+.chat-card .wrap,
+.chat-card .bubble-wrap,
+.chat-card [data-testid="chatbot"] {
+    background: rgba(9, 10, 13, 0.94) !important;
+}
+
 .chat-history [data-testid="chatbot"] {
     background: transparent !important;
+}
+
+.chat-history .message-wrap,
+.chat-history .message,
+.chat-history .bot,
+.chat-history .user {
+    color: var(--text) !important;
+}
+
+.chat-history .placeholder,
+.chat-history [data-testid="chatbot"] .placeholder {
+    color: var(--muted) !important;
 }
 
 .composer {
     margin-top: 1rem;
     padding: 1rem;
+}
+
+.composer,
+.composer > div,
+.composer .gr-block,
+.composer .gr-box,
+.composer .gr-group {
+    background: rgba(9, 10, 13, 0.94) !important;
 }
 
 .prompt-row {
@@ -228,6 +335,13 @@ body, .gradio-container {
     box-shadow: none !important;
     font-size: 1rem !important;
     line-height: 1.6 !important;
+}
+
+.composer-input,
+.composer-input > div,
+.composer-input .gr-block,
+.composer-input .gr-box {
+    background: transparent !important;
 }
 
 .composer-input textarea::placeholder {
