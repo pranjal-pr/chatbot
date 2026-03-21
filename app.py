@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from html import escape
+from pathlib import Path
 
 import gradio as gr
 
@@ -15,6 +16,8 @@ EXAMPLE_ACTIONS = [
     ("Summarize", "Summarize the most important points in the indexed documents."),
     ("Plan", "Create an action plan based on the indexed documents."),
 ]
+DATA_DIR = Path(__file__).resolve().parent / "data"
+SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf"}
 
 CUSTOM_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap');
@@ -260,36 +263,38 @@ footer {
 
 
 def format_status() -> str:
-    try:
-        pipeline = get_cached_pipeline()
-        details = [
+    files = []
+    if DATA_DIR.exists():
+        for path in DATA_DIR.iterdir():
+            if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+                files.append(path)
+
+    file_count = len(files)
+    file_line = f"Files: **{file_count}**" if file_count else "Files: **0**"
+    return "\n\n".join(
+        [
             "### Status",
-            f"Runtime: `{pipeline.provider}`",
-            f"Files: **{pipeline.source_count}**",
-            f"Chunks: **{pipeline.chunk_count}**",
-            f"Chat model: `{pipeline.chat_model}`",
+            "Ready.",
+            file_line,
+            "Supported files: `.txt`, `.md`, `.pdf`",
         ]
-        if pipeline.note:
-            details.append(pipeline.note)
-        details.append("Supported files: `.txt`, `.md`, `.pdf`")
-        return "\n\n".join(details)
-    except ConfigurationError as exc:
-        return f"### Status\nSetup needed: {exc}"
-    except Exception as exc:
-        return f"### Status\nInitialization failed: `{exc}`"
+    )
 
 
 def format_header_pills() -> str:
-    try:
-        pipeline = get_cached_pipeline()
-        pills = [
-            f"Provider: {escape(pipeline.provider)}",
-            f"Files: {pipeline.source_count}",
-            f"Chunks: {pipeline.chunk_count}",
-            "Grounded answers",
-        ]
-    except Exception:
-        pills = ["Starting", "Grounded answers"]
+    files = 0
+    if DATA_DIR.exists():
+        files = sum(
+            1
+            for path in DATA_DIR.iterdir()
+            if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS
+        )
+
+    pills = [
+        "Grounded answers",
+        f"Files: {files}",
+        "Local fallback",
+    ]
 
     items = "".join(f"<span class='status-pill'>{pill}</span>" for pill in pills)
     return f"<div class='header-pills'>{items}</div>"
