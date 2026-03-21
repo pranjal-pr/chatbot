@@ -263,7 +263,7 @@ def format_status() -> str:
     try:
         pipeline = get_cached_pipeline()
         details = [
-            "### Session",
+            "### Status",
             f"Runtime: `{pipeline.provider}`",
             f"Files: **{pipeline.source_count}**",
             f"Chunks: **{pipeline.chunk_count}**",
@@ -274,9 +274,9 @@ def format_status() -> str:
         details.append("Supported files: `.txt`, `.md`, `.pdf`")
         return "\n\n".join(details)
     except ConfigurationError as exc:
-        return f"### Session\nSetup needed: {exc}"
+        return f"### Status\nSetup needed: {exc}"
     except Exception as exc:
-        return f"### Session\nInitialization failed: `{exc}`"
+        return f"### Status\nInitialization failed: `{exc}`"
 
 
 def format_header_pills() -> str:
