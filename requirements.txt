@@ -1,12 +1,11 @@
 faiss-cpu
 gradio
 langchain-community
-langchain-openai
+langchain-groq
 langchain-text-splitters
 pypdf
 python-dotenv
 sentence-transformers
 sentencepiece
-tiktoken
 torch
 transformers

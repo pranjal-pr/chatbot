@@ -15,7 +15,7 @@ from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnableLambda
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_groq import ChatGroq
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
@@ -23,11 +23,11 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_DOCS_DIR = PROJECT_ROOT / "data"
 DEFAULT_INDEX_DIR = PROJECT_ROOT / "vectorstore"
-DEFAULT_CHAT_MODEL = "gpt-4.1-mini"
-DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+DEFAULT_CHAT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 DEFAULT_LOCAL_CHAT_MODEL = "google/flan-t5-small"
-DEFAULT_LOCAL_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-DEFAULT_PROVIDER = "auto"
+DEFAULT_LOCAL_EMBEDDING_MODEL = DEFAULT_EMBEDDING_MODEL
+DEFAULT_PROVIDER = "groq"
 
 PROMPT_TEMPLATE = """You are a helpful retrieval-augmented assistant.
 Answer the user's question using only the provided context.
@@ -226,8 +226,8 @@ def build_generation_chain(llm: Any, template: str = PROMPT_TEMPLATE, use_chat_p
     return prompt | llm | StrOutputParser()
 
 
-def openai_api_key_available() -> bool:
-    return bool(os.getenv("OPENAI_API_KEY"))
+def groq_api_key_available() -> bool:
+    return bool(os.getenv("GROQ_API_KEY"))
 
 
 def summarize_exception(exc: Exception) -> str:
@@ -235,15 +235,23 @@ def summarize_exception(exc: Exception) -> str:
     return message[:280] if len(message) > 280 else message
 
 
-def humanize_openai_issue(exc: Exception) -> str:
+def humanize_groq_issue(exc: Exception) -> str:
     message = summarize_exception(exc).lower()
     if "insufficient_quota" in message or "quota" in message or "billing" in message:
-        return "OpenAI quota is unavailable"
-    if "invalid_api_key" in message or "incorrect api key" in message or "authentication" in message:
-        return "OpenAI authentication failed"
+        return "Groq quota is unavailable"
+    if (
+        "invalid_api_key" in message
+        or "incorrect api key" in message
+        or "authentication" in message
+        or "unauthorized" in message
+        or "api key" in message
+    ):
+        return "Groq authentication failed"
+    if "permission" in message or "forbidden" in message or "403" in message:
+        return "Groq model access failed"
     if "rate limit" in message or "error code: 429" in message:
-        return "OpenAI rate limit was reached"
-    return "OpenAI is unavailable"
+        return "Groq rate limit was reached"
+    return "Groq is unavailable"
 
 
 def should_fallback_to_local(exc: Exception) -> bool:
@@ -256,7 +264,11 @@ def should_fallback_to_local(exc: Exception) -> bool:
         "billing",
         "incorrect api key",
         "authentication",
-        "openai",
+        "invalid_api_key",
+        "unauthorized",
+        "forbidden",
+        "permission",
+        "groq",
     )
     return any(marker in message for marker in markers)
 
@@ -271,8 +283,8 @@ def clear_local_runtime_preference() -> None:
     _LOCAL_FALLBACK_REASON = None
 
 
-def build_openai_llm(chat_model: str) -> Any:
-    return ChatOpenAI(model=chat_model, temperature=0)
+def build_groq_llm(chat_model: str) -> Any:
+    return ChatGroq(model=chat_model, temperature=0)
 
 
 @lru_cache(maxsize=2)
@@ -305,35 +317,38 @@ def build_local_llm(chat_model: str) -> Any:
     return RunnableLambda(local_generate)
 
 
-def build_openai_pipeline(docs_dir: Path, index_root: Path, rebuild: bool) -> RAGPipeline:
-    chat_model = os.getenv("OPENAI_MODEL", DEFAULT_CHAT_MODEL)
-    embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
+def build_groq_pipeline(docs_dir: Path, index_root: Path, rebuild: bool) -> RAGPipeline:
+    chat_model = os.getenv("GROQ_MODEL", DEFAULT_CHAT_MODEL)
+    embedding_model = os.getenv("LOCAL_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
 
-    embeddings = OpenAIEmbeddings(model=embedding_model)
-    llm = build_openai_llm(chat_model)
+    embeddings = HuggingFaceEmbeddings(
+        model_name=embedding_model,
+        model_kwargs={"device": "cpu"},
+    )
+    llm = build_groq_llm(chat_model)
     vectorstore, source_count, chunk_count = load_or_build_vectorstore(
         docs_dir=docs_dir,
         index_root=index_root,
         embeddings=embeddings,
         rebuild=rebuild,
-        provider="openai",
+        provider="groq",
         embedding_model=embedding_model,
     )
 
     return RAGPipeline(
         retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
-        generation_chain=build_generation_chain(llm, use_chat_prompt=False),
+        generation_chain=build_generation_chain(llm),
         chat_model=chat_model,
         embedding_model=embedding_model,
         source_count=source_count,
         chunk_count=chunk_count,
-        provider="openai",
+        provider="groq",
     )
 
 
 def build_local_pipeline(docs_dir: Path, index_root: Path, rebuild: bool, note: str | None = None) -> RAGPipeline:
     chat_model = os.getenv("LOCAL_CHAT_MODEL", DEFAULT_LOCAL_CHAT_MODEL)
-    embedding_model = os.getenv("LOCAL_EMBEDDING_MODEL", DEFAULT_LOCAL_EMBEDDING_MODEL)
+    embedding_model = os.getenv("LOCAL_EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
 
     embeddings = HuggingFaceEmbeddings(
         model_name=embedding_model,
@@ -352,7 +367,7 @@ def build_local_pipeline(docs_dir: Path, index_root: Path, rebuild: bool, note: 
 
     return RAGPipeline(
         retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
-        generation_chain=build_generation_chain(llm),
+        generation_chain=build_generation_chain(llm, use_chat_prompt=False),
         chat_model=chat_model,
         embedding_model=embedding_model,
         source_count=source_count,
@@ -362,13 +377,13 @@ def build_local_pipeline(docs_dir: Path, index_root: Path, rebuild: bool, note: 
     )
 
 
-def build_openai_chat_runtime() -> ChatRuntime:
-    chat_model = os.getenv("OPENAI_MODEL", DEFAULT_CHAT_MODEL)
-    llm = build_openai_llm(chat_model)
+def build_groq_chat_runtime() -> ChatRuntime:
+    chat_model = os.getenv("GROQ_MODEL", DEFAULT_CHAT_MODEL)
+    llm = build_groq_llm(chat_model)
     return ChatRuntime(
         generation_chain=build_generation_chain(llm, CHAT_PROMPT_TEMPLATE),
         chat_model=chat_model,
-        provider="openai",
+        provider="groq",
     )
 
 
@@ -391,7 +406,7 @@ def create_pipeline(
     load_environment()
     provider = os.getenv("RAG_PROVIDER", DEFAULT_PROVIDER).strip().lower()
 
-    if _LOCAL_FALLBACK_REASON and provider == "auto":
+    if _LOCAL_FALLBACK_REASON and provider in {"groq", "auto"}:
         return build_local_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild, note=_LOCAL_FALLBACK_REASON)
 
     if provider == "local":
@@ -402,27 +417,25 @@ def create_pipeline(
             note="Local runtime selected via RAG_PROVIDER=local.",
         )
 
-    if provider == "openai":
-        if not openai_api_key_available():
-            raise ConfigurationError("RAG_PROVIDER=openai requires OPENAI_API_KEY to be set.")
-        return build_openai_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild)
+    if provider not in {"groq", "auto"}:
+        raise ConfigurationError("RAG_PROVIDER must be one of: groq, auto, local.")
 
-    if not openai_api_key_available():
+    if not groq_api_key_available():
         return build_local_pipeline(
             docs_dir=docs_dir,
             index_root=index_dir,
             rebuild=rebuild,
-            note="OPENAI_API_KEY is not set. Using local fallback models.",
+            note="GROQ_API_KEY is not set. Using local fallback models.",
         )
 
     try:
         clear_local_runtime_preference()
-        return build_openai_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild)
+        return build_groq_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild)
     except Exception as exc:
         if not should_fallback_to_local(exc):
             raise
 
-        reason = f"{humanize_openai_issue(exc)}. Using local fallback models."
+        reason = f"{humanize_groq_issue(exc)}. Using local fallback models."
         prefer_local_runtime(reason)
         return build_local_pipeline(docs_dir=docs_dir, index_root=index_dir, rebuild=rebuild, note=reason)
 
@@ -440,28 +453,26 @@ def create_chat_runtime() -> ChatRuntime:
     load_environment()
     provider = os.getenv("RAG_PROVIDER", DEFAULT_PROVIDER).strip().lower()
 
-    if _LOCAL_FALLBACK_REASON and provider == "auto":
+    if _LOCAL_FALLBACK_REASON and provider in {"groq", "auto"}:
         return build_local_chat_runtime(_LOCAL_FALLBACK_REASON)
 
     if provider == "local":
         return build_local_chat_runtime("Local runtime selected via RAG_PROVIDER=local.")
 
-    if provider == "openai":
-        if not openai_api_key_available():
-            raise ConfigurationError("RAG_PROVIDER=openai requires OPENAI_API_KEY to be set.")
-        return build_openai_chat_runtime()
+    if provider not in {"groq", "auto"}:
+        raise ConfigurationError("RAG_PROVIDER must be one of: groq, auto, local.")
 
-    if not openai_api_key_available():
-        return build_local_chat_runtime("OPENAI_API_KEY is not set. Using local fallback models.")
+    if not groq_api_key_available():
+        return build_local_chat_runtime("GROQ_API_KEY is not set. Using local fallback models.")
 
     try:
         clear_local_runtime_preference()
-        return build_openai_chat_runtime()
+        return build_groq_chat_runtime()
     except Exception as exc:
         if not should_fallback_to_local(exc):
             raise
 
-        reason = f"{humanize_openai_issue(exc)}. Using local fallback models."
+        reason = f"{humanize_groq_issue(exc)}. Using local fallback models."
         prefer_local_runtime(reason)
         return build_local_chat_runtime(reason)
 
@@ -479,7 +490,7 @@ def enable_local_fallback_from_exception(exc: Exception) -> bool:
     if not should_fallback_to_local(exc):
         return False
 
-    prefer_local_runtime(f"{humanize_openai_issue(exc)}. Using local fallback models.")
+    prefer_local_runtime(f"{humanize_groq_issue(exc)}. Using local fallback models.")
     reset_cached_pipeline()
     reset_cached_chat_runtime()
     return True

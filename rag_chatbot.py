@@ -14,7 +14,7 @@ from rag_backend import (
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Simple RAG chatbot with LangChain, FAISS, and OpenAI.")
+    parser = argparse.ArgumentParser(description="Simple RAG chatbot with LangChain, FAISS, and Groq.")
     parser.add_argument(
         "--docs",
         type=Path,

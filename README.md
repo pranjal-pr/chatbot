@@ -9,7 +9,7 @@ short_description: Grounded Q&A over the documents stored in this repository.
 tags:
   - rag
   - chatbot
-  - openai
+  - groq
   - langchain
 ---
 
@@ -18,7 +18,8 @@ tags:
 This project is a minimal Retrieval-Augmented Generation (RAG) chatbot in Python using:
 
 - LangChain for document loading, chunking, and orchestration
-- OpenAI for embeddings and answer generation
+- Groq for answer generation
+- Sentence Transformers for local embeddings
 - FAISS for local vector search
 - Gradio for the web UI, packaged inside a Docker Space
 
@@ -26,9 +27,9 @@ This project is a minimal Retrieval-Augmented Generation (RAG) chatbot in Python
 
 1. Loads `.txt`, `.md`, and `.pdf` files from `data/`
 2. Splits them into chunks of 1000 characters with 200-character overlap
-3. Builds a local FAISS vector index
+3. Builds local sentence-transformer embeddings and stores them in a FAISS index
 4. Retrieves the top 3 most relevant chunks for each question
-5. Passes that context to an OpenAI chat model and answers in either a terminal app or a Docker-based Hugging Face Space
+5. Passes that context to a Groq chat model and answers in either a terminal app or a Docker-based Hugging Face Space
 
 ## Deploy to Hugging Face Spaces
 
@@ -36,7 +37,7 @@ This project is a minimal Retrieval-Augmented Generation (RAG) chatbot in Python
 2. Push this repository to GitHub.
 3. In the GitHub repo, add an Actions secret named `HF_TOKEN` with write access to the target Space.
 4. In the GitHub repo, add an Actions variable named `HF_SPACE_REPO` with the value `username/space-name`.
-5. In the Space `Settings` page, add `OPENAI_API_KEY` as a secret.
+5. In the Space `Settings` page, add `GROQ_API_KEY` as a secret.
 6. Commit your knowledge base files under `data/`.
 7. Push to the `main` branch on GitHub. After CI passes, the workflow in `.github/workflows/deploy-space.yml` will force-push that branch to the Hugging Face Space.
 
@@ -60,7 +61,7 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Add your OpenAI API key to `.env`, then place your source documents in `data/`.
+Add your Groq API key to `.env`, then place your source documents in `data/`.
 
 ## Run Locally
 
@@ -84,7 +85,7 @@ docker run --rm -p 7860:7860 --env-file .env rag-chatbot
 ## Notes
 
 - Use `--rebuild` whenever you add or change documents.
-- The script defaults to `gpt-4.1-mini` for chat and `text-embedding-3-small` for embeddings.
+- The script defaults to Groq `llama-3.3-70b-versatile` for generation and `sentence-transformers/all-MiniLM-L6-v2` for embeddings.
 - Supported document types are `.txt`, `.md`, and `.pdf`.
 - The Space UI is defined in `app.py`, while the shared RAG runtime lives in `rag_backend.py`.
 - `Dockerfile` is the Hugging Face Space entrypoint for the Docker deployment path.
