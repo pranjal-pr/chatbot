@@ -217,7 +217,19 @@ On each push to `main`/`master`:
 
 Required GitHub repository secrets:
 - `HF_TOKEN`: Hugging Face token with write access to the Space repo
-- `HF_SPACE_ID`: `username/space-name`
+
+Required Hugging Face Space identifier:
+- Use one of these GitHub settings:
+  - secret `HF_SPACE_ID`
+  - variable `HF_SPACE_ID`
+  - variable `HF_SPACE_REPO`
+- Value format: `username/space-name`
+
+Required Hugging Face Space secret:
+- `GROQ_API_KEY`
+
+Optional provider secret:
+- `MOONSHOT_API_KEY`
 
 ## Failures + Tradeoffs
 
