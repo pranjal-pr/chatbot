@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-LOGGER_NAME = "shinzogpt"
+LOGGER_NAME = "chatzen"
 KNOWN_MODEL_PRICING_USD_PER_1K = {
     "llama-3.3-70b-versatile": {"input_per_1k": 0.00059, "output_per_1k": 0.00079},
     "llama-3.1-8b-instant": {"input_per_1k": 0.00005, "output_per_1k": 0.00008},

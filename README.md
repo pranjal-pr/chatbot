@@ -1,18 +1,17 @@
 ---
-title: ShinzoGPT
+title: ChatZen
 sdk: docker
 app_port: 7860
 ---
 
-# ShinzoGPT
+# ChatZen
 
-[![Tests](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/ci-tests.yml)
-[![Deploy To Hugging Face Space](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/deploy-to-hf-space.yml/badge.svg)](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/deploy-to-hf-space.yml)
-[![Secret Scan](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/secret-scan.yml)
-[![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-Live%20App-yellow?logo=huggingface)](https://huggingface.co/spaces/shinzobolte/ShinzoGPT)
-[![Version](https://img.shields.io/badge/version-v1.0.0-black)](https://github.com/shinzoxD/streamlit-genai-chatbot/tree/v1.0.0)
+[![Tests](https://github.com/pranjal-pr/chatbot/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/pranjal-pr/chatbot/actions/workflows/ci-tests.yml)
+[![Deploy To Hugging Face Space](https://github.com/pranjal-pr/chatbot/actions/workflows/deploy-to-hf-space.yml/badge.svg)](https://github.com/pranjal-pr/chatbot/actions/workflows/deploy-to-hf-space.yml)
+[![Secret Scan](https://github.com/pranjal-pr/chatbot/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/pranjal-pr/chatbot/actions/workflows/secret-scan.yml)
+[![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-Live%20App-yellow?logo=huggingface)](https://huggingface.co/spaces/praanjalpradhan/chatbot)
 
-ShinzoGPT is a document-aware AI chat app with:
+ChatZen is a document-aware AI chat app with:
 - Streamlit frontend (`chatbot.py`)
 - FastAPI backend (`api.py`)
 - Chroma vector store + LangChain RAG (`rag_utility.py`)
@@ -20,11 +19,11 @@ ShinzoGPT is a document-aware AI chat app with:
 - Docker + Hugging Face Spaces deployment
 - GitHub Actions auto-deploy to Hugging Face Space
 
-Website: https://huggingface.co/spaces/shinzobolte/ShinzoGPT
+Website: https://huggingface.co/spaces/praanjalpradhan/chatbot
 
 Live links:
-- App: https://huggingface.co/spaces/shinzobolte/ShinzoGPT
-- GitHub Actions: https://github.com/shinzoxD/streamlit-genai-chatbot/actions
+- App: https://huggingface.co/spaces/praanjalpradhan/chatbot
+- GitHub Actions: https://github.com/pranjal-pr/chatbot/actions
 
 ## Resume-Ready Bullets
 
@@ -60,7 +59,7 @@ flowchart TD
 
 Static architecture image (for platforms without Mermaid support):
 
-![ShinzoGPT Architecture](./assets/architecture-diagram.svg)
+![ChatZen Architecture](./assets/architecture-diagram.svg)
 
 ## Quantitative Results (Measured)
 

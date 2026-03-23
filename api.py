@@ -86,8 +86,8 @@ rate_limiter = InMemoryRateLimiter()
 
 
 app = FastAPI(
-    title="ShinzoGPT Agentic RAG API",
-    description="Backend API for the Agentic Retrieval-Augmented Generation chatbot.",
+    title="ChatZen Agentic RAG API",
+    description="Backend API for the agentic retrieval-augmented generation chatbot.",
     version="1.1",
 )
 

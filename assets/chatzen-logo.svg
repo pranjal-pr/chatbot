@@ -1,0 +1,37 @@
+<svg width="256" height="256" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="12" y1="12" x2="116" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1C24"/>
+      <stop offset="1" stop-color="#0D0E14"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(42 32) rotate(52.3) scale(74.2)">
+      <stop stop-color="#F4F0FF"/>
+      <stop offset="0.44" stop-color="#BEAEFF"/>
+      <stop offset="1" stop-color="#7F65F8"/>
+    </radialGradient>
+    <linearGradient id="stroke" x1="22" y1="18" x2="102" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.46"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#bg)"/>
+  <rect x="8.5" y="8.5" width="111" height="111" rx="27.5" stroke="url(#stroke)"/>
+
+  <circle cx="64" cy="64" r="29" fill="url(#glow)" fill-opacity="0.16"/>
+
+  <path
+    d="M81.5 42.5C76.7 38.1 70.9 36 64.2 36C49.7 36 39 46.3 39 61.7C39 77.1 49.7 88 64.3 88C70.6 88 76.2 86 80.9 81.9"
+    stroke="url(#glow)"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M53 46H88L56 82H89"
+    stroke="#F2EEFF"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

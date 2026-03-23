@@ -48,7 +48,7 @@ COINGECKO_SIMPLE_PRICE_URL = os.getenv(
 COINBASE_SPOT_PRICE_URL = os.getenv("COINBASE_SPOT_PRICE_URL", "https://api.coinbase.com/v2/prices/{symbol}-USD/spot")
 YAHOO_SEARCH_URL = os.getenv("YAHOO_SEARCH_URL", "https://search.yahoo.com/search")
 JINA_MIRROR_PREFIX = os.getenv("JINA_MIRROR_PREFIX", "https://r.jina.ai/http://")
-DEFAULT_HTTP_HEADERS = {"User-Agent": "ShinzoGPT/1.0 (+https://huggingface.co/spaces/shinzobolte/ShinzoGPT)"}
+DEFAULT_HTTP_HEADERS = {"User-Agent": "ChatZen/1.0 (+https://huggingface.co/spaces/praanjalpradhan/chatbot)"}
 SEARCH_HTTP_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "

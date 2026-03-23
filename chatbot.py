@@ -17,7 +17,7 @@ load_dotenv()
 
 API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 BASE_DIR = Path(__file__).resolve().parent
-LOGO_PATH = BASE_DIR / "assets" / "shinzogpt-logo.svg"
+LOGO_PATH = BASE_DIR / "assets" / "chatzen-logo.svg"
 MAX_PROMPT_CHARS = int(os.getenv("MAX_QUERY_CHARS", "2000"))
 MAX_UPLOAD_FILES = int(os.getenv("MAX_UPLOAD_FILES", "5"))
 MAX_UPLOAD_FILE_MB = int(os.getenv("MAX_UPLOAD_FILE_MB", "20"))
@@ -307,7 +307,7 @@ def render_motion_bridge(auto_scroll: bool = False) -> None:
 
 
 page_icon = str(LOGO_PATH) if LOGO_PATH.exists() else ":robot_face:"
-st.set_page_config(page_title="ShinzoGPT", page_icon=page_icon, layout="wide")
+st.set_page_config(page_title="ChatZen", page_icon=page_icon, layout="wide")
 
 st.markdown(
     """
@@ -1038,9 +1038,9 @@ if "should_scroll_to_bottom" not in st.session_state:
 
 logo_data_uri = load_logo_data_uri()
 logo_markup = (
-    f'<img src="{logo_data_uri}" alt="ShinzoGPT logo" />'
+    f'<img src="{logo_data_uri}" alt="ChatZen logo" />'
     if logo_data_uri
-    else '<div class="hero-logo-fallback">SG</div>'
+    else '<div class="hero-logo-fallback">CZ</div>'
 )
 
 with st.sidebar:
@@ -1185,7 +1185,7 @@ st.markdown(
     <div class="hero hero-center">
         <div class="hero-logo">{logo_markup}</div>
         <div>
-            <h1>ShinzoGPT</h1>
+            <h1>ChatZen</h1>
             <p>Ask anything. Attach knowledge only when you want grounded answers.</p>
         </div>
     </div>
@@ -1218,7 +1218,7 @@ with st.container():
     render_chat_bottom_anchor()
 
 user_prompt = st.chat_input(
-    "Ask ShinzoGPT...",
+    "Ask ChatZen...",
     key="chat_prompt",
     max_chars=MAX_PROMPT_CHARS,
     disabled=bool(st.session_state.pending_prompt),

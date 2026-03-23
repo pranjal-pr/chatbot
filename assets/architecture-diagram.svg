@@ -15,7 +15,7 @@
   </defs>
 
   <rect class="bg" x="0" y="0" width="1400" height="920"/>
-  <text class="title" x="700" y="70" text-anchor="middle">ShinzoGPT Architecture</text>
+<text class="title" x="700" y="70" text-anchor="middle">ChatZen Architecture</text>
 
   <rect class="box" x="80" y="130" width="280" height="90"/>
   <text class="label" x="220" y="183" text-anchor="middle">User Browser</text>

@@ -5,7 +5,7 @@
 ### Highlights
 - Production-ready Streamlit + FastAPI RAG app deployed to Hugging Face Space.
 - Model routing (`auto`, `chat_only`, `rag_only`) with conversation-memory support.
-- Black/grey UI redesign with ShinzoGPT branding and architecture docs.
+- Black/grey UI redesign with ChatZen branding and architecture docs.
 
 ### Reliability and quality
 - Added retries, timeouts, and request validation.
