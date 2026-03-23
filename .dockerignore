@@ -1,8 +1,12 @@
 .git
-.github
-.venv
-__pycache__
+venv/
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
 .env
-vectorstore/index.faiss
-vectorstore/index.pkl
+*.log
+doc_vectorstore/
+vector_db_*/
+temp.txt
+

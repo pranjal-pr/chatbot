@@ -1,5 +1,12 @@
-.env
+venv/
 .venv/
 __pycache__/
-vectorstore/*
-!vectorstore/.gitkeep
+*.pyc
+*.pyo
+*.pyd
+.env
+*.log
+doc_vectorstore/
+vector_db_*/
+temp.txt
+

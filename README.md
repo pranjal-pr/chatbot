@@ -1,91 +1,241 @@
 ---
-title: RAG Chatbot
-colorFrom: blue
-colorTo: green
+title: ShinzoGPT
 sdk: docker
 app_port: 7860
-fullWidth: true
-short_description: Grounded Q&A over the documents stored in this repository.
-tags:
-  - rag
-  - chatbot
-  - groq
-  - langchain
 ---
 
-# RAG Chatbot
+# ShinzoGPT
 
-This project is a minimal Retrieval-Augmented Generation (RAG) chatbot in Python using:
+[![Tests](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/ci-tests.yml)
+[![Deploy To Hugging Face Space](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/deploy-to-hf-space.yml/badge.svg)](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/deploy-to-hf-space.yml)
+[![Secret Scan](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/shinzoxD/streamlit-genai-chatbot/actions/workflows/secret-scan.yml)
+[![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-Live%20App-yellow?logo=huggingface)](https://huggingface.co/spaces/shinzobolte/ShinzoGPT)
+[![Version](https://img.shields.io/badge/version-v1.0.0-black)](https://github.com/shinzoxD/streamlit-genai-chatbot/tree/v1.0.0)
 
-- LangChain for document loading, chunking, and orchestration
-- Groq for answer generation
-- Sentence Transformers for local embeddings
-- FAISS for local vector search
-- Gradio for the web UI, packaged inside a Docker Space
+ShinzoGPT is a document-aware AI chat app with:
+- Streamlit frontend (`chatbot.py`)
+- FastAPI backend (`api.py`)
+- Chroma vector store + LangChain RAG (`rag_utility.py`)
+- Agent tools for non-RAG chat (`agent_tools.py`): web search + safe calculator
+- Docker + Hugging Face Spaces deployment
+- GitHub Actions auto-deploy to Hugging Face Space
 
-## What it does
+Website: https://huggingface.co/spaces/shinzobolte/ShinzoGPT
 
-1. Loads `.txt`, `.md`, and `.pdf` files from `data/`
-2. Splits them into chunks of 1000 characters with 200-character overlap
-3. Builds local sentence-transformer embeddings and stores them in a FAISS index
-4. Retrieves the top 3 most relevant chunks for each question
-5. Passes that context to a Groq chat model and answers in either a terminal app or a Docker-based Hugging Face Space
+Live links:
+- App: https://huggingface.co/spaces/shinzobolte/ShinzoGPT
+- GitHub Actions: https://github.com/shinzoxD/streamlit-genai-chatbot/actions
 
-## Deploy to Hugging Face Spaces
+## Resume-Ready Bullets
 
-1. Create a new Hugging Face Space and choose the `Docker` SDK.
-2. Push this repository to GitHub.
-3. In the GitHub repo, add an Actions secret named `HF_TOKEN` with write access to the target Space.
-4. In the GitHub repo, add an Actions variable named `HF_SPACE_REPO` with the value `username/space-name`.
-5. In the Space `Settings` page, add `GROQ_API_KEY` as a secret.
-6. Commit your knowledge base files under `data/`.
-7. Push to the `main` branch on GitHub. After CI passes, the workflow in `.github/workflows/deploy-space.yml` will force-push that branch to the Hugging Face Space.
+- Built and deployed an end-to-end RAG chatbot (Streamlit + FastAPI + Chroma) on Hugging Face Spaces with GitHub Actions CD.
+- Implemented multi-provider model routing, conversational memory, and agent-style tool usage (web search + calculator).
+- Added observability, reliability, and security controls: structured logs, runtime metrics, retries/timeouts, rate limiting, and automated secret scanning.
+- Benchmarked all configured models with reproducible evaluation tooling, including optional RAGAS scoring (faithfulness + answer relevancy).
+- Productionized project quality gates with CI checks (`ruff`, `black --check`, `mypy`, `pytest`) and release versioning (`v1.0.0`).
 
-The Space reads its configuration from environment variables, which matches Hugging Face Spaces secrets behavior. The Docker container serves the Gradio app on port `7860`, which matches the `app_port` configured above.
+## Architecture Diagram
 
-## GitHub CI/CD
+```mermaid
+flowchart TD
+    A[User Browser] --> B[Streamlit UI<br/>chatbot.py]
+    B -->|POST /upload| C[FastAPI Backend<br/>api.py]
+    B -->|POST /chat| C
+    B -->|GET /metrics/*| C
 
-This repository includes two GitHub Actions workflows:
+    C --> D[Routing Layer<br/>auto, chat_only, rag_only]
+    D --> E[Direct LLM Path]
+    D --> F[RAG Path]
+    E --> L[Tool Agent Layer<br/>web search + calculator]
 
-- `.github/workflows/ci.yml` installs dependencies, compiles the Python files, imports the Gradio app, and checks pull requests for files larger than 10 MB.
-- `.github/workflows/deploy-space.yml` deploys the latest successful `main` build to the Hugging Face Space and also supports manual runs from the Actions tab.
+    E --> G[Providers<br/>Groq / Moonshot]
+    L --> G
+    F --> H[RAG Utility<br/>rag_utility.py]
+    H --> I[Chroma Vector DB]
+    H --> G
 
-If any tracked file exceeds 10 MB, Hugging Face recommends Git LFS for Spaces synchronization. For large PDFs or other binary assets, track them with Git LFS before pushing.
-
-## Local Setup
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
+    C --> J[Observability<br/>structured logs + metrics]
+    C --> K[Rate Limiting + Validation + Retry]
 ```
 
-Add your Groq API key to `.env`, then place your source documents in `data/`.
+Static architecture image (for platforms without Mermaid support):
 
-## Run Locally
+![ShinzoGPT Architecture](./assets/architecture-diagram.svg)
 
-```powershell
-python rag_chatbot.py --rebuild
+## Quantitative Results (Measured)
+
+Measured at `2026-02-27T00:05:24Z` using:
+- Retrieval benchmark: `evaluation/benchmark.jsonl` on `vector_db_1771979965`
+- Runtime benchmark: 5 real `/chat` requests per model in `chat_only` mode
+- Model matrix tested: all models currently exposed by this app configuration
+
+| Provider | Model | Status | Hit@3 | MRR@3 | Faithfulness | p95 Latency (ms) | Error Rate |
+|---|---|---|---:|---:|---:|---:|---:|
+| Groq | llama-3.3-70b-versatile | ok | 1.00 | 1.00 | 1.00 | 1698.38 | 0.00% |
+| Groq | llama-3.1-8b-instant | ok | 1.00 | 1.00 | 0.80 | 891.13 | 0.00% |
+| Moonshot Kimi | moonshot-v1-8k | not run | - | - | - | - | - |
+| Moonshot Kimi | moonshotai/kimi-k2-thinking | ok | 1.00 | 1.00 | 1.00 | 16093.45 | 0.00% |
+
+Recommended default for recruiter walkthrough: **Groq `llama-3.3-70b-versatile`** (best quality-speed balance in this run).
+
+Moonshot note for this snapshot:
+- `moonshot-v1-8k` was not included in the benchmark run.
+
+Reproducible reports:
+- [Model matrix report](./evaluation/model_matrix_latest.json)
+- [Full eval report (single-model baseline)](./evaluation/report_latest_full.json)
+- [Retrieval-only report (single-model baseline)](./evaluation/report_latest_retrieval.json)
+- [Runtime benchmark report (single-model baseline)](./evaluation/runtime_benchmark_latest.json)
+
+## Flagship-Readiness Features
+
+### 1) Evaluation Metrics
+- Retrieval metrics: hit rate, MRR, precision@k
+- Answer grounding proxy: lexical faithfulness score from response/context overlap
+- Keyword recall against benchmark expectations
+- Optional RAGAS metrics: `faithfulness`, `answer_relevancy`
+
+Run evaluation:
+
+```bash
+pip install -r evaluation/requirements-eval.txt
+
+python evaluation/evaluate_rag.py ^
+  --vector-db-path vector_db_1234567890 ^
+  --benchmark-file evaluation/benchmark.jsonl ^
+  --top-k 3 ^
+  --provider Groq ^
+  --model llama-3.3-70b-versatile ^
+  --api-key <YOUR_API_KEY> ^
+  --use-ragas ^
+  --out-file evaluation/report.json
 ```
 
-After the first run, the FAISS index is stored locally in `vectorstore/`. Subsequent runs can reuse it:
+You can also run retrieval-only eval (omit provider/model/api-key).
 
-```powershell
-python rag_chatbot.py
+Run full model-matrix benchmark (all configured UI models):
+
+```bash
+python evaluation/benchmark_model_matrix.py
 ```
 
-## Run Locally with Docker
+This writes `evaluation/model_matrix_latest.json` with per-model metrics and failure reasons.
+To include RAGAS for each model:
 
-```powershell
-docker build -t rag-chatbot .
-docker run --rm -p 7860:7860 --env-file .env rag-chatbot
+```bash
+python evaluation/benchmark_model_matrix.py --use-ragas
 ```
 
-## Notes
+### 2) Testing + Reliability
+- Unit/integration tests in `tests/`
+- LLM invocation retry with exponential backoff
+- HTTP retry + timeout strategy in Streamlit client
+- Stronger backend error handling and safer responses
 
-- Use `--rebuild` whenever you add or change documents.
-- The script defaults to Groq `llama-3.3-70b-versatile` for generation and `sentence-transformers/all-MiniLM-L6-v2` for embeddings.
-- Supported document types are `.txt`, `.md`, and `.pdf`.
-- The Space UI is defined in `app.py`, while the shared RAG runtime lives in `rag_backend.py`.
-- `Dockerfile` is the Hugging Face Space entrypoint for the Docker deployment path.
+Run tests:
+
+```bash
+pytest -q
+```
+
+### Current Verification Snapshot (2026-02-28)
+- `ruff check .` passed
+- `black --check .` passed
+- `mypy .` passed
+- `pytest -q` passed (`27 passed`)
+- FastAPI smoke checks passed:
+  - `GET /health -> 200`
+  - `/chat` validation behavior for missing key -> `400` with clear message
+  - `/upload` non-PDF validation -> `400` with clear message
+- Streamlit headless startup smoke passed (`200` response)
+
+Limitations of this local verification run:
+- True end-to-end provider completion check is external-key dependent; local Moonshot key returned `401 Invalid Authentication` in smoke test.
+- Docker build was not validated on this machine (Docker CLI unavailable locally).
+
+### 3) Observability
+- Structured JSON logs (`request_completed`, `chat_completed`, etc.)
+- Request-level latency/error telemetry
+- Estimated token/cost tracking (configurable)
+- Metrics endpoints:
+  - `GET /metrics/summary`
+  - `GET /metrics/events?limit=50`
+- Streamlit includes a runtime metrics panel
+
+Optional protection:
+- Set `OBSERVABILITY_TOKEN` and call metrics endpoints with `x-observability-token` header.
+
+### 4) Security Basics
+- Query length limits (`MAX_QUERY_CHARS`)
+- Upload limits (`MAX_UPLOAD_FILES`, `MAX_UPLOAD_FILE_MB`)
+- File type and empty-file checks
+- Rate limiting per IP for `/chat` and `/upload`
+- Safer vector DB path validation
+- API keys never logged
+
+## Environment Variables
+
+See `env_template.txt` for all settings.
+
+Core keys:
+- `GROQ_API_KEY`
+- `MOONSHOT_API_KEY`
+
+Operational controls:
+- `CHAT_RATE_LIMIT_PER_MIN`
+- `UPLOAD_RATE_LIMIT_PER_MIN`
+- `LLM_RETRY_ATTEMPTS`
+- `HTTP_CONNECT_TIMEOUT_SEC`
+- `HTTP_READ_TIMEOUT_CHAT_SEC`
+- `HTTP_READ_TIMEOUT_UPLOAD_SEC`
+- `ENABLE_TOOLS`
+- `AGENT_PLANNING_ENABLED`
+- `ENABLE_WEB_SEARCH`
+- `WEB_SEARCH_TIMEOUT_SEC`
+- `WEB_SEARCH_MAX_RESULTS`
+- `WEB_SEARCH_CANDIDATE_FACTOR`
+- `WEB_SEARCH_MIN_RELEVANCE`
+- `MAX_CALC_EXPRESSION_CHARS`
+
+Cost estimation (optional):
+- `DEFAULT_INPUT_COST_PER_1K_TOKENS`
+- `DEFAULT_OUTPUT_COST_PER_1K_TOKENS`
+- `USE_GLOBAL_DEFAULT_MODEL_PRICING`
+- `MODEL_PRICING_OVERRIDES_JSON`
+
+Notes:
+- The backend prefers provider-reported token usage metadata when available, and only falls back to heuristic token estimates otherwise.
+- Per-model pricing is preferred. Leave global defaults at `0` unless you explicitly want a single fallback price applied to unknown models.
+
+## Deploy (GitHub -> Hugging Face)
+
+Workflow: `.github/workflows/deploy-to-hf-space.yml`
+
+On each push to `main`/`master`:
+1. Validates required secrets
+2. Pushes exact GitHub commit to HF Space `main`
+
+Required GitHub repository secrets:
+- `HF_TOKEN`: Hugging Face token with write access to the Space repo
+- `HF_SPACE_ID`: `username/space-name`
+
+## Failures + Tradeoffs
+
+### Known Failure Modes
+- Retrieval can return the right source file but still miss a specific detail chunk.
+- In-memory rate limiting resets on restart and is not shared across replicas.
+- Faithfulness score is heuristic and can overestimate factual grounding.
+- Provider/network timeouts can still happen under external API instability.
+- Web search quality depends on external search API availability and returned snippets.
+- Invalid provider credentials return upstream auth errors (for example, `401 Invalid Authentication`).
+
+### Mitigations
+- Use top-k retrieval + source display + route controls (`chat_only` / `rag_only`) for debugging.
+- Add retries with exponential backoff for model calls and HTTP client requests.
+- Enforce strict input/file limits and payload validation to reduce bad requests.
+- Expose runtime metrics and structured logs to detect latency/error regressions quickly.
+
+### Tradeoffs
+- Simple observability and rate limiting keep deployment lightweight but are less robust than distributed stacks.
+- Cost telemetry is estimate-based unless provider-side token usage metadata is available.
+- Current benchmark is small and domain-focused; broader generalization needs a larger test set.
