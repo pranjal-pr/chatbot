@@ -309,20 +309,225 @@ def render_motion_bridge(auto_scroll: bool = False) -> None:
 page_icon = str(LOGO_PATH) if LOGO_PATH.exists() else ":robot_face:"
 st.set_page_config(page_title="ChatZen", page_icon=page_icon, layout="wide")
 
+if "theme_mode" not in st.session_state:
+    st.session_state.theme_mode = "dark"
+
+with st.sidebar:
+    st.markdown("### Appearance")
+    dark_col, light_col = st.columns(2)
+    with dark_col:
+        if st.button(
+            "Dark mode",
+            use_container_width=True,
+            type="primary" if st.session_state.theme_mode == "dark" else "secondary",
+        ):
+            st.session_state.theme_mode = "dark"
+    with light_col:
+        if st.button(
+            "White mode",
+            use_container_width=True,
+            type="primary" if st.session_state.theme_mode == "light" else "secondary",
+        ):
+            st.session_state.theme_mode = "light"
+    st.markdown("---")
+
+theme_mode = st.session_state.theme_mode
+theme_vars = {
+    "dark": {
+        "bg_base": "#060606",
+        "bg_panel": "#121212",
+        "bg_panel_soft": "#171717",
+        "bg_pill": "#1c1c1c",
+        "txt_main": "#f1f1f1",
+        "txt_muted": "#a4a4a4",
+        "line": "rgba(255, 255, 255, 0.13)",
+        "line_strong": "rgba(255, 255, 255, 0.24)",
+        "app_background": """
+            radial-gradient(1px 1px at 40px 90px, rgba(255, 255, 255, 0.40), transparent 100%),
+            radial-gradient(1px 1px at 120px 40px, rgba(255, 255, 255, 0.28), transparent 100%),
+            radial-gradient(1.2px 1.2px at 220px 160px, rgba(255, 255, 255, 0.36), transparent 100%),
+            radial-gradient(1px 1px at 300px 100px, rgba(255, 255, 255, 0.30), transparent 100%),
+            radial-gradient(1.3px 1.3px at 430px 230px, rgba(255, 255, 255, 0.35), transparent 100%),
+            radial-gradient(1.1px 1.1px at 510px 60px, rgba(255, 255, 255, 0.28), transparent 100%),
+            radial-gradient(800px 300px at 50% -180px, rgba(255, 255, 255, 0.09), transparent 70%),
+            linear-gradient(180deg, #040404 0%, #0a0a0a 100%)
+        """,
+        "header_bg": "rgba(8, 8, 8, 0.62)",
+        "sidebar_bg": "linear-gradient(180deg, rgba(14, 14, 16, 0.98), rgba(10, 10, 12, 0.98))",
+        "sidebar_border": "rgba(255, 255, 255, 0.08)",
+    },
+    "light": {
+        "bg_base": "#eef1f5",
+        "bg_panel": "#ffffff",
+        "bg_panel_soft": "#f7f9fc",
+        "bg_pill": "#eef2f7",
+        "txt_main": "#111827",
+        "txt_muted": "#5f6b7a",
+        "line": "rgba(15, 23, 42, 0.10)",
+        "line_strong": "rgba(15, 23, 42, 0.18)",
+        "app_background": "linear-gradient(180deg, #f5f7fb 0%, #edf1f6 100%)",
+        "header_bg": "rgba(255, 255, 255, 0.82)",
+        "sidebar_bg": "linear-gradient(180deg, rgba(250, 251, 253, 0.98), rgba(242, 245, 249, 0.98))",
+        "sidebar_border": "rgba(15, 23, 42, 0.08)",
+    },
+}[theme_mode]
+
+light_mode_overrides = (
+    """
+    .hero {
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 249, 252, 0.98));
+        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .hero-logo {
+        background: #ffffff;
+        box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+    }
+
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 249, 252, 0.98));
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    [data-testid="stForm"] {
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 248, 251, 0.98));
+        box-shadow:
+            0 10px 22px rgba(15, 23, 42, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    [data-testid="stTextInput"] > div > div > input {
+        border: 1px solid rgba(15, 23, 42, 0.12) !important;
+        background: #ffffff !important;
+        color: #111827 !important;
+    }
+
+    .stFormSubmitButton > button {
+        border: 1px solid rgba(15, 23, 42, 0.14);
+        background: linear-gradient(180deg, #111827, #0f172a);
+        color: #ffffff;
+        box-shadow:
+            0 10px 18px rgba(15, 23, 42, 0.14),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .stButton > button {
+        background: #ffffff;
+        color: #111827;
+        border-color: rgba(15, 23, 42, 0.12);
+    }
+
+    .stButton > button:hover {
+        background: #f7f9fc;
+    }
+
+    div[data-baseweb="select"] > div {
+        background: #ffffff;
+        border-color: rgba(15, 23, 42, 0.12);
+    }
+
+    div[data-baseweb="select"] > div:hover {
+        background: #f7f9fc;
+    }
+
+    [data-testid="stFileUploader"] {
+        background: rgba(15, 23, 42, 0.02);
+    }
+
+    [data-testid="stFileUploader"]:hover {
+        background: rgba(15, 23, 42, 0.04);
+    }
+
+    [data-testid="stChatInput"] [data-baseweb="textarea"] {
+        border: 1px solid rgba(15, 23, 42, 0.12) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    [data-testid="stChatInput"] [data-baseweb="textarea"]:focus-within {
+        border-color: rgba(79, 70, 229, 0.38) !important;
+        box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.16) !important;
+    }
+
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stChatInput"] input {
+        color: #111827 !important;
+    }
+
+    [data-testid="stChatInput"] textarea::placeholder,
+    [data-testid="stChatInput"] input::placeholder {
+        color: rgba(17, 24, 39, 0.44) !important;
+    }
+
+    [data-testid="stChatInput"] button {
+        border: 1px solid rgba(15, 23, 42, 0.12) !important;
+        background: #ffffff !important;
+    }
+
+    [data-testid="stChatInput"] button:hover {
+        border-color: rgba(15, 23, 42, 0.18) !important;
+        background: #f7f9fc !important;
+    }
+
+    .sg-msg {
+        background: #ffffff;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .sg-msg.user {
+        background: #edf2ff;
+        border-color: rgba(79, 70, 229, 0.18);
+    }
+
+    .sg-msg.assistant {
+        background: #ffffff;
+        border-color: rgba(15, 23, 42, 0.12);
+    }
+
+    .sg-meta {
+        color: #64748b;
+    }
+
+    .typing-dots span {
+        background: rgba(15, 23, 42, 0.72);
+        box-shadow: none;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.04);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(15, 23, 42, 0.18);
+        background-clip: content-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(15, 23, 42, 0.28);
+        background-clip: content-box;
+    }
+"""
+    if theme_mode == "light"
+    else ""
+)
+
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
     :root {
-        --bg-base: #060606;
-        --bg-panel: #121212;
-        --bg-panel-soft: #171717;
-        --bg-pill: #1c1c1c;
-        --txt-main: #f1f1f1;
-        --txt-muted: #a4a4a4;
-        --line: rgba(255, 255, 255, 0.13);
-        --line-strong: rgba(255, 255, 255, 0.24);
+        --bg-base: __BG_BASE__;
+        --bg-panel: __BG_PANEL__;
+        --bg-panel-soft: __BG_PANEL_SOFT__;
+        --bg-pill: __BG_PILL__;
+        --txt-main: __TXT_MAIN__;
+        --txt-muted: __TXT_MUTED__;
+        --line: __LINE__;
+        --line-strong: __LINE_STRONG__;
     }
 
     html, body, [class*="css"] {
@@ -332,15 +537,7 @@ st.markdown(
     }
 
     [data-testid="stAppViewContainer"] {
-        background:
-            radial-gradient(1px 1px at 40px 90px, rgba(255, 255, 255, 0.40), transparent 100%),
-            radial-gradient(1px 1px at 120px 40px, rgba(255, 255, 255, 0.28), transparent 100%),
-            radial-gradient(1.2px 1.2px at 220px 160px, rgba(255, 255, 255, 0.36), transparent 100%),
-            radial-gradient(1px 1px at 300px 100px, rgba(255, 255, 255, 0.30), transparent 100%),
-            radial-gradient(1.3px 1.3px at 430px 230px, rgba(255, 255, 255, 0.35), transparent 100%),
-            radial-gradient(1.1px 1.1px at 510px 60px, rgba(255, 255, 255, 0.28), transparent 100%),
-            radial-gradient(800px 300px at 50% -180px, rgba(255, 255, 255, 0.09), transparent 70%),
-            linear-gradient(180deg, #040404 0%, #0a0a0a 100%);
+        background: __APP_BACKGROUND__;
         background-size:
             260px 260px,
             330px 330px,
@@ -354,7 +551,7 @@ st.markdown(
     }
 
     [data-testid="stHeader"] {
-        background: rgba(8, 8, 8, 0.62);
+        background: __HEADER_BG__;
         backdrop-filter: blur(8px);
     }
 
@@ -373,8 +570,8 @@ st.markdown(
     }
 
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, rgba(14, 14, 16, 0.98), rgba(10, 10, 12, 0.98));
-        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        background: __SIDEBAR_BG__;
+        border-right: 1px solid __SIDEBAR_BORDER__;
     }
 
     .hero {
@@ -1016,8 +1213,22 @@ st.markdown(
             max-width: 100%;
         }
     }
+
+    __LIGHT_MODE_OVERRIDES__
     </style>
-    """,
+    """.replace("__BG_BASE__", theme_vars["bg_base"])
+    .replace("__BG_PANEL__", theme_vars["bg_panel"])
+    .replace("__BG_PANEL_SOFT__", theme_vars["bg_panel_soft"])
+    .replace("__BG_PILL__", theme_vars["bg_pill"])
+    .replace("__TXT_MAIN__", theme_vars["txt_main"])
+    .replace("__TXT_MUTED__", theme_vars["txt_muted"])
+    .replace("__LINE__", theme_vars["line"])
+    .replace("__LINE_STRONG__", theme_vars["line_strong"])
+    .replace("__APP_BACKGROUND__", theme_vars["app_background"])
+    .replace("__HEADER_BG__", theme_vars["header_bg"])
+    .replace("__SIDEBAR_BG__", theme_vars["sidebar_bg"])
+    .replace("__SIDEBAR_BORDER__", theme_vars["sidebar_border"])
+    .replace("__LIGHT_MODE_OVERRIDES__", light_mode_overrides),
     unsafe_allow_html=True,
 )
 
