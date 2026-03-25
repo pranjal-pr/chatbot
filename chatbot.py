@@ -1038,9 +1038,7 @@ if "should_scroll_to_bottom" not in st.session_state:
 
 logo_data_uri = load_logo_data_uri()
 logo_markup = (
-    f'<img src="{logo_data_uri}" alt="ChatZen logo" />'
-    if logo_data_uri
-    else '<div class="hero-logo-fallback">CZ</div>'
+    f'<img src="{logo_data_uri}" alt="ChatZen logo" />' if logo_data_uri else '<div class="hero-logo-fallback">CZ</div>'
 )
 
 with st.sidebar:
