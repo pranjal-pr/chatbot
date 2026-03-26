@@ -306,6 +306,10 @@ def render_motion_bridge(auto_scroll: bool = False) -> None:
     )
 
 
+def toggle_theme_mode() -> None:
+    st.session_state.theme_is_light = not st.session_state.get("theme_is_light", False)
+
+
 page_icon = str(LOGO_PATH) if LOGO_PATH.exists() else ":robot_face:"
 st.set_page_config(page_title="ChatZen", page_icon=page_icon, layout="wide")
 
@@ -356,24 +360,14 @@ theme_vars = {
 
 light_mode_overrides = (
     """
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] > label {
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stButton"] > button {
         background:
             linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 251, 0.96));
         box-shadow:
             0 12px 22px rgba(15, 23, 42, 0.08),
             inset 0 0 0 1px rgba(255, 255, 255, 0.86),
             inset 0 1px 0 rgba(255, 255, 255, 0.92);
-    }
-
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] {
-        background: linear-gradient(180deg, #d7e2ec, #cfd9e4) !important;
-        border-color: rgba(15, 23, 42, 0.10) !important;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
-    }
-
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] > div {
-        background: #ffffff !important;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16) !important;
+        color: #0f172a !important;
     }
 
     .hero {
@@ -606,18 +600,20 @@ st.markdown(
         align-items: flex-end;
     }
 
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] {
-        width: min(100%, 184px);
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stButton"] {
+        width: min(100%, 176px);
         margin-left: auto;
         margin-bottom: 1rem;
     }
 
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] > label {
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stButton"] > button {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.82rem;
-        min-height: 54px;
+        position: relative;
+        gap: 0.7rem;
+        min-height: 52px;
+        width: 100%;
         border: 1px solid color-mix(in srgb, var(--line-strong) 76%, transparent);
         border-radius: 18px;
         padding: 0.42rem 0.9rem;
@@ -631,54 +627,73 @@ st.markdown(
             border-color 180ms ease,
             box-shadow 180ms ease,
             background 180ms ease,
-            transform 180ms ease;
+            transform 180ms ease,
+            color 180ms ease;
+        color: var(--txt-main) !important;
+        font-size: 0.94rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em;
     }
 
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] > label:hover {
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stButton"] > button:hover {
         transform: translateY(-1px);
         border-color: color-mix(in srgb, var(--line-strong) 96%, transparent);
         box-shadow:
             0 14px 28px rgba(0, 0, 0, 0.22),
             inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 86%, transparent),
             inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    }
-
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] p {
         color: var(--txt-main) !important;
-        font-size: 0.94rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.01em;
-        white-space: nowrap;
     }
 
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] [data-testid="stMarkdownContainer"] p {
-        margin-bottom: 0 !important;
-    }
-
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] {
-        background: linear-gradient(180deg, rgba(31, 41, 55, 0.92), rgba(17, 24, 39, 0.92)) !important;
-        border: 1px solid color-mix(in srgb, var(--line-strong) 82%, transparent) !important;
-        box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.06),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
-        min-width: 46px;
-        min-height: 26px;
-        padding: 0 2px;
-    }
-
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"][aria-checked="true"] {
-        background: linear-gradient(135deg, #49c9bb, #7ce6cf) !important;
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stButton"] > button:focus,
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stButton"] > button:focus-visible {
         border-color: rgba(94, 225, 201, 0.56) !important;
         box-shadow:
-            0 0 0 4px rgba(88, 211, 200, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+            0 0 0 4px rgba(88, 211, 200, 0.12),
+            0 12px 24px rgba(0, 0, 0, 0.18),
+            inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 86%, transparent) !important;
     }
 
-    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] > div {
-        background: #f5f7fb !important;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18) !important;
-        width: 20px !important;
-        height: 20px !important;
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stButton"] > button::before {
+        content: "";
+        width: 40px;
+        height: 22px;
+        flex-shrink: 0;
+        border-radius: 999px;
+        background: linear-gradient(180deg, rgba(31, 41, 55, 0.92), rgba(17, 24, 39, 0.92));
+        border: 1px solid color-mix(in srgb, var(--line-strong) 82%, transparent);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.06),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stButton"] > button::after {
+        content: "";
+        position: absolute;
+        left: 1.12rem;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #f5f7fb;
+        box-shadow:
+            0 2px 10px rgba(15, 23, 42, 0.18),
+            inset 0 1px 0 rgba(255, 255, 255, 0.65);
+        transition:
+            transform 180ms ease,
+            background 180ms ease,
+            box-shadow 180ms ease;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor.light-active) [data-testid="stButton"] > button::before {
+        background: linear-gradient(135deg, #49c9bb, #7ce6cf);
+        border-color: rgba(94, 225, 201, 0.56);
+        box-shadow:
+            0 0 0 4px rgba(88, 211, 200, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor.light-active) [data-testid="stButton"] > button::after {
+        transform: translateX(18px);
     }
 
     .hero:hover {
@@ -1477,8 +1492,15 @@ else:
 
 theme_toggle_left, theme_toggle_right = st.columns([1, 0.32])
 with theme_toggle_right:
-    st.markdown("<div class='theme-toggle-anchor'></div>", unsafe_allow_html=True)
-    st.toggle("Light mode", key="theme_is_light")
+    anchor_class = "theme-toggle-anchor light-active" if st.session_state.theme_is_light else "theme-toggle-anchor"
+    st.markdown(f"<div class='{anchor_class}'></div>", unsafe_allow_html=True)
+    if st.button(
+        "Dark mode" if st.session_state.theme_is_light else "Light mode",
+        key="theme_mode_button",
+        use_container_width=True,
+        on_click=toggle_theme_mode,
+    ):
+        st.rerun()
 
 st.markdown(
     f"""
