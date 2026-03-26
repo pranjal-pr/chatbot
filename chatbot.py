@@ -344,18 +344,21 @@ theme_vars = {
         "sidebar_border": "rgba(255, 255, 255, 0.08)",
     },
     "light": {
-        "bg_base": "#eef1f5",
+        "bg_base": "#edf2f8",
         "bg_panel": "#ffffff",
-        "bg_panel_soft": "#f7f9fc",
-        "bg_pill": "#eef2f7",
-        "txt_main": "#111827",
-        "txt_muted": "#5f6b7a",
-        "line": "rgba(15, 23, 42, 0.10)",
-        "line_strong": "rgba(15, 23, 42, 0.18)",
-        "app_background": "linear-gradient(180deg, #f5f7fb 0%, #edf1f6 100%)",
+        "bg_panel_soft": "#f5f8fc",
+        "bg_pill": "#eef3f8",
+        "txt_main": "#0f172a",
+        "txt_muted": "#4f5f75",
+        "line": "rgba(15, 23, 42, 0.12)",
+        "line_strong": "rgba(15, 23, 42, 0.22)",
+        "app_background": """
+            radial-gradient(720px 220px at 50% 140px, rgba(125, 149, 255, 0.10), transparent 72%),
+            linear-gradient(180deg, #f7f9fc 0%, #eef3f9 52%, #e8eef5 100%)
+        """,
         "header_bg": "rgba(255, 255, 255, 0.82)",
-        "sidebar_bg": "linear-gradient(180deg, rgba(250, 251, 253, 0.98), rgba(242, 245, 249, 0.98))",
-        "sidebar_border": "rgba(15, 23, 42, 0.08)",
+        "sidebar_bg": "linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(239, 244, 250, 0.98))",
+        "sidebar_border": "rgba(15, 23, 42, 0.10)",
     },
 }[theme_mode]
 
@@ -373,33 +376,45 @@ light_mode_overrides = (
 
     .hero {
         background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 249, 252, 0.98));
-        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+            linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(244, 248, 253, 0.98));
+        border-color: rgba(15, 23, 42, 0.10) !important;
+        box-shadow:
+            0 18px 38px rgba(15, 23, 42, 0.10),
+            0 2px 0 rgba(255, 255, 255, 0.72) inset;
     }
 
     .hero-logo {
         background: #ffffff;
-        box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+        border-color: rgba(15, 23, 42, 0.10);
+        box-shadow:
+            inset 0 0 0 1px rgba(15, 23, 42, 0.04),
+            0 6px 16px rgba(15, 23, 42, 0.08);
     }
 
     [data-testid="stVerticalBlockBorderWrapper"] {
         background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 249, 252, 0.98));
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 248, 252, 0.98));
+        border-color: rgba(15, 23, 42, 0.10) !important;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
     }
 
     [data-testid="stForm"] {
         background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 248, 251, 0.98));
+            linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(243, 247, 252, 0.98));
+        border-color: rgba(15, 23, 42, 0.12) !important;
         box-shadow:
-            0 10px 22px rgba(15, 23, 42, 0.08),
+            0 12px 24px rgba(15, 23, 42, 0.08),
             inset 0 1px 0 rgba(255, 255, 255, 0.8);
     }
 
     [data-testid="stTextInput"] > div > div > input {
-        border: 1px solid rgba(15, 23, 42, 0.12) !important;
+        border: 1px solid rgba(15, 23, 42, 0.14) !important;
         background: #ffffff !important;
         color: #111827 !important;
+    }
+
+    [data-testid="stTextInput"] > div > div > input::placeholder {
+        color: rgba(15, 23, 42, 0.42) !important;
     }
 
     .stFormSubmitButton > button {
@@ -412,30 +427,37 @@ light_mode_overrides = (
     }
 
     .stButton > button {
-        background: #ffffff;
-        color: #111827;
-        border-color: rgba(15, 23, 42, 0.12);
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+        color: #0f172a;
+        border-color: rgba(15, 23, 42, 0.14);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
     }
 
     .stButton > button:hover {
-        background: #f7f9fc;
+        background: linear-gradient(180deg, #ffffff, #f1f5f9);
     }
 
     div[data-baseweb="select"] > div {
-        background: #ffffff;
-        border-color: rgba(15, 23, 42, 0.12);
+        background: rgba(255, 255, 255, 0.98);
+        border-color: rgba(15, 23, 42, 0.14);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
     }
 
     div[data-baseweb="select"] > div:hover {
-        background: #f7f9fc;
+        background: #f8fafc;
+    }
+
+    div[data-baseweb="select"] * {
+        color: #0f172a !important;
     }
 
     [data-testid="stFileUploader"] {
-        background: rgba(15, 23, 42, 0.02);
+        border-color: rgba(15, 23, 42, 0.14) !important;
+        background: rgba(255, 255, 255, 0.66);
     }
 
     [data-testid="stFileUploader"]:hover {
-        background: rgba(15, 23, 42, 0.04);
+        background: rgba(255, 255, 255, 0.9);
     }
 
     [data-testid="stChatInput"] [data-baseweb="textarea"] {
@@ -471,21 +493,66 @@ light_mode_overrides = (
 
     .sg-msg {
         background: #ffffff;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
     }
 
     .sg-msg.user {
-        background: #edf2ff;
-        border-color: rgba(79, 70, 229, 0.18);
+        background: #eef4ff;
+        border-color: rgba(79, 70, 229, 0.24);
     }
 
     .sg-msg.assistant {
         background: #ffffff;
-        border-color: rgba(15, 23, 42, 0.12);
+        border-color: rgba(15, 23, 42, 0.14);
     }
 
+    .chip {
+        color: #334155;
+        background: linear-gradient(180deg, #ffffff, #f3f7fb);
+        border-color: rgba(15, 23, 42, 0.12);
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .chip.ok {
+        color: #0f766e;
+        background: linear-gradient(180deg, #f0fdfa, #def7f3);
+        border-color: rgba(45, 212, 191, 0.34);
+    }
+
+    .chip.warn {
+        color: #7c2d12;
+        background: linear-gradient(180deg, #fff7ed, #ffedd5);
+        border-color: rgba(249, 115, 22, 0.26);
+    }
+
+    .empty-state {
+        background: rgba(255, 255, 255, 0.72);
+        border-color: rgba(15, 23, 42, 0.14);
+    }
+
+    .prompt-hint,
+    .small-muted,
     .sg-meta {
-        color: #64748b;
+        color: #5b6b80;
+    }
+
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+    [data-testid="stSidebar"] [data-testid="stMetricValue"] {
+        color: #0f172a !important;
+    }
+
+    [data-testid="stSidebar"] [data-baseweb="select"] > div,
+    [data-testid="stSidebar"] .stButton > button {
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+        border-color: rgba(15, 23, 42, 0.14);
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(15, 23, 42, 0.10);
     }
 
     .typing-dots span {
