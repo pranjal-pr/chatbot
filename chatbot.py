@@ -84,7 +84,8 @@ def parse_backend_error(response: requests.Response) -> str:
 
 def resolve_provider_config(provider: str):
     if provider == "Groq":
-        return os.getenv("GROQ_API_KEY"), False, "Model", GROQ_MODELS
+        groq_key = os.getenv("GROQ_API_KEY") or os.getenv("GR0Q_API_KEY")
+        return groq_key, False, "Model", GROQ_MODELS
 
     moonshot_key = os.getenv("MOONSHOT_API_KEY")
     is_nvidia_key = bool(moonshot_key and moonshot_key.startswith("nvapi-"))

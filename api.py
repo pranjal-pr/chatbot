@@ -328,6 +328,8 @@ def _resolve_api_key(provider: str, request_api_key: Optional[str]) -> str:
     if not env_key_name:
         return ""
     env_value = os.getenv(env_key_name, "")
+    if provider == "Groq" and not env_value:
+        env_value = os.getenv("GR0Q_API_KEY", "")
     return env_value
 
 
