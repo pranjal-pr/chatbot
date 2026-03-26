@@ -1533,7 +1533,7 @@ with st.sidebar:
 
     st.markdown("---")
     summary_refresh = st.button("Refresh Runtime Metrics", use_container_width=True)
-    if summary_refresh or (time.time() - st.session_state.runtime_summary_ts) > 30:
+    if summary_refresh:
         st.session_state.runtime_summary = fetch_runtime_summary()
         st.session_state.runtime_summary_ts = time.time()
 
@@ -1546,7 +1546,7 @@ with st.sidebar:
             left_m.metric("Avg Latency (ms)", summary.get("avg_request_latency_ms", 0))
             right_m.metric("Est. Cost (USD)", format_usd_value(summary.get("estimated_cost_usd_total", 0)))
         else:
-            st.caption("Metrics unavailable.")
+            st.caption("Metrics load on demand.")
 
 if routing_mode == "chat_only":
     mode_text = "Chat Only Mode"
