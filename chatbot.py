@@ -309,29 +309,11 @@ def render_motion_bridge(auto_scroll: bool = False) -> None:
 page_icon = str(LOGO_PATH) if LOGO_PATH.exists() else ":robot_face:"
 st.set_page_config(page_title="ChatZen", page_icon=page_icon, layout="wide")
 
-if "theme_mode" not in st.session_state:
-    st.session_state.theme_mode = "dark"
+if "theme_is_light" not in st.session_state:
+    legacy_theme_mode = st.session_state.get("theme_mode")
+    st.session_state.theme_is_light = legacy_theme_mode == "light"
 
-with st.sidebar:
-    st.markdown("### Appearance")
-    dark_col, light_col = st.columns(2)
-    with dark_col:
-        if st.button(
-            "Dark mode",
-            use_container_width=True,
-            type="primary" if st.session_state.theme_mode == "dark" else "secondary",
-        ):
-            st.session_state.theme_mode = "dark"
-    with light_col:
-        if st.button(
-            "White mode",
-            use_container_width=True,
-            type="primary" if st.session_state.theme_mode == "light" else "secondary",
-        ):
-            st.session_state.theme_mode = "light"
-    st.markdown("---")
-
-theme_mode = st.session_state.theme_mode
+theme_mode = "light" if st.session_state.theme_is_light else "dark"
 theme_vars = {
     "dark": {
         "bg_base": "#060606",
@@ -374,6 +356,24 @@ theme_vars = {
 
 light_mode_overrides = (
     """
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] > label {
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 251, 0.96));
+        box-shadow:
+            0 10px 18px rgba(15, 23, 42, 0.08),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] {
+        background: #dde5ef !important;
+        border-color: rgba(15, 23, 42, 0.12) !important;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] > div {
+        background: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14) !important;
+    }
+
     .hero {
         background:
             linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 249, 252, 0.98));
@@ -593,6 +593,69 @@ st.markdown(
     .hero-center {
         max-width: 780px;
         margin: 0 auto 0.8rem;
+    }
+
+    .theme-toggle-anchor {
+        width: 100%;
+        height: 0;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) {
+        align-items: flex-end;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] {
+        width: min(100%, 220px);
+        margin-left: auto;
+        margin-bottom: 0.95rem;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] > label {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 0.32rem 0.72rem;
+        background:
+            linear-gradient(180deg, color-mix(in srgb, var(--bg-panel-soft) 92%, transparent), var(--bg-panel));
+        box-shadow:
+            0 10px 18px rgba(0, 0, 0, 0.16),
+            inset 0 0 0 1px color-mix(in srgb, var(--line) 75%, transparent);
+        transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] > label:hover {
+        border-color: var(--line-strong);
+        box-shadow:
+            0 12px 22px rgba(0, 0, 0, 0.2),
+            inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 85%, transparent);
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] p {
+        color: var(--txt-main) !important;
+        font-size: 0.92rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] [data-testid="stMarkdownContainer"] p {
+        margin-bottom: 0 !important;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] {
+        background: color-mix(in srgb, var(--bg-pill) 88%, transparent) !important;
+        border: 1px solid var(--line) !important;
+        box-shadow: none !important;
+        min-width: 44px;
+        min-height: 24px;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"][aria-checked="true"] {
+        background: linear-gradient(135deg, #58d3c8, #8ce7d4) !important;
+        border-color: rgba(88, 211, 200, 0.55) !important;
+    }
+
+    [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] > div {
+        background: #f5f7fb !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18) !important;
     }
 
     .hero:hover {
@@ -1388,6 +1451,11 @@ elif routing_mode == "rag_only":
 else:
     mode_text = "Using Knowledge Base" if st.session_state.vector_db_path else "General Chat Mode"
     mode_class = "ok" if st.session_state.vector_db_path else "warn"
+
+theme_toggle_left, theme_toggle_right = st.columns([1, 0.32])
+with theme_toggle_right:
+    st.markdown("<div class='theme-toggle-anchor'></div>", unsafe_allow_html=True)
+    st.toggle("Light mode", key="theme_is_light")
 
 st.markdown(
     f"""
