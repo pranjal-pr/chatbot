@@ -360,18 +360,20 @@ light_mode_overrides = (
         background:
             linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 251, 0.96));
         box-shadow:
-            0 10px 18px rgba(15, 23, 42, 0.08),
-            inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+            0 12px 22px rgba(15, 23, 42, 0.08),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.86),
+            inset 0 1px 0 rgba(255, 255, 255, 0.92);
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] {
-        background: #dde5ef !important;
-        border-color: rgba(15, 23, 42, 0.12) !important;
+        background: linear-gradient(180deg, #d7e2ec, #cfd9e4) !important;
+        border-color: rgba(15, 23, 42, 0.10) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] > div {
         background: #ffffff !important;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14) !important;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16) !important;
     }
 
     .hero {
@@ -605,35 +607,48 @@ st.markdown(
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] {
-        width: min(100%, 220px);
+        width: min(100%, 184px);
         margin-left: auto;
-        margin-bottom: 0.95rem;
+        margin-bottom: 1rem;
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] > label {
-        border: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.82rem;
+        min-height: 54px;
+        border: 1px solid color-mix(in srgb, var(--line-strong) 76%, transparent);
         border-radius: 18px;
-        padding: 0.32rem 0.72rem;
+        padding: 0.42rem 0.9rem;
         background:
-            linear-gradient(180deg, color-mix(in srgb, var(--bg-panel-soft) 92%, transparent), var(--bg-panel));
+            linear-gradient(180deg, color-mix(in srgb, var(--bg-panel-soft) 94%, transparent), color-mix(in srgb, var(--bg-panel) 97%, transparent));
         box-shadow:
-            0 10px 18px rgba(0, 0, 0, 0.16),
-            inset 0 0 0 1px color-mix(in srgb, var(--line) 75%, transparent);
-        transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+            0 12px 24px rgba(0, 0, 0, 0.18),
+            inset 0 0 0 1px color-mix(in srgb, var(--line) 88%, transparent),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        transition:
+            border-color 180ms ease,
+            box-shadow 180ms ease,
+            background 180ms ease,
+            transform 180ms ease;
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] > label:hover {
-        border-color: var(--line-strong);
+        transform: translateY(-1px);
+        border-color: color-mix(in srgb, var(--line-strong) 96%, transparent);
         box-shadow:
-            0 12px 22px rgba(0, 0, 0, 0.2),
-            inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 85%, transparent);
+            0 14px 28px rgba(0, 0, 0, 0.22),
+            inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 86%, transparent),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] p {
         color: var(--txt-main) !important;
-        font-size: 0.92rem !important;
+        font-size: 0.94rem !important;
         font-weight: 600 !important;
         letter-spacing: 0.01em;
+        white-space: nowrap;
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] [data-testid="stMarkdownContainer"] p {
@@ -641,21 +656,29 @@ st.markdown(
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] {
-        background: color-mix(in srgb, var(--bg-pill) 88%, transparent) !important;
-        border: 1px solid var(--line) !important;
-        box-shadow: none !important;
-        min-width: 44px;
-        min-height: 24px;
+        background: linear-gradient(180deg, rgba(31, 41, 55, 0.92), rgba(17, 24, 39, 0.92)) !important;
+        border: 1px solid color-mix(in srgb, var(--line-strong) 82%, transparent) !important;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.06),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
+        min-width: 46px;
+        min-height: 26px;
+        padding: 0 2px;
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"][aria-checked="true"] {
-        background: linear-gradient(135deg, #58d3c8, #8ce7d4) !important;
-        border-color: rgba(88, 211, 200, 0.55) !important;
+        background: linear-gradient(135deg, #49c9bb, #7ce6cf) !important;
+        border-color: rgba(94, 225, 201, 0.56) !important;
+        box-shadow:
+            0 0 0 4px rgba(88, 211, 200, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
     }
 
     [data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) [data-testid="stCheckbox"] div[role="switch"] > div {
         background: #f5f7fb !important;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18) !important;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18) !important;
+        width: 20px !important;
+        height: 20px !important;
     }
 
     .hero:hover {
