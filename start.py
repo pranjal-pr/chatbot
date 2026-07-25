@@ -3,28 +3,19 @@ import signal
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
+
+from dotenv import load_dotenv
+
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(PROJECT_DIR, ".env"))
 
 
-def wait_for_backend(health_url: str, timeout_sec: int, backend_process: subprocess.Popen) -> None:
-    print(f"Waiting for backend health at {health_url} (timeout: {timeout_sec}s)", flush=True)
-    deadline = time.time() + timeout_sec
-    while time.time() < deadline:
-        if backend_process.poll() is not None:
-            raise RuntimeError("Backend exited before becoming healthy.")
-
-        try:
-            with urllib.request.urlopen(health_url, timeout=1.5) as response:
-                if response.status == 200:
-                    print("Backend is healthy. Launching Streamlit.", flush=True)
-                    return
-        except (urllib.error.URLError, TimeoutError):
-            pass
-
-        time.sleep(0.75)
-
-    raise RuntimeError(f"Backend health check timed out after {timeout_sec}s.")
+def backend_client_host(bind_host: str) -> str:
+    """Return a host that clients can connect to when uvicorn binds to all interfaces."""
+    normalized_host = bind_host.strip().lower()
+    if normalized_host in {"0.0.0.0", "::", "[::]"}:
+        return "127.0.0.1"
+    return bind_host
 
 
 def terminate_process(process: subprocess.Popen | None) -> None:
@@ -44,10 +35,10 @@ def main() -> int:
     api_port = os.getenv("API_PORT", "8000")
     app_host = os.getenv("APP_HOST", "0.0.0.0")
     app_port = os.getenv("PORT", "7860")
-    health_timeout_sec = int(os.getenv("API_HEALTH_TIMEOUT_SEC", "90"))
 
     child_env = os.environ.copy()
-    child_env.setdefault("API_URL", f"http://{api_host}:{api_port}")
+    child_env.setdefault("API_URL", f"http://{backend_client_host(api_host)}:{api_port}")
+    child_env.setdefault("PYTHONUNBUFFERED", "1")
 
     backend_cmd = [
         sys.executable,
@@ -77,7 +68,7 @@ def main() -> int:
         "true",
     ]
 
-    backend_process = subprocess.Popen(backend_cmd, env=child_env)
+    backend_process: subprocess.Popen | None = None
     frontend_process: subprocess.Popen | None = None
 
     def handle_shutdown(signum, _frame) -> None:
@@ -89,13 +80,24 @@ def main() -> int:
     signal.signal(signal.SIGINT, handle_shutdown)
 
     try:
-        wait_for_backend(
-            health_url=f"http://{api_host}:{api_port}/health",
-            timeout_sec=health_timeout_sec,
-            backend_process=backend_process,
-        )
-        frontend_process = subprocess.Popen(streamlit_cmd, env=child_env)
-        return frontend_process.wait()
+        print(f"Starting backend on http://{api_host}:{api_port}", flush=True)
+        backend_process = subprocess.Popen(backend_cmd, env=child_env, cwd=PROJECT_DIR)
+        print(f"Starting Streamlit on http://{app_host}:{app_port}", flush=True)
+        frontend_process = subprocess.Popen(streamlit_cmd, env=child_env, cwd=PROJECT_DIR)
+
+        while True:
+            frontend_exit_code = frontend_process.poll()
+            if frontend_exit_code is not None:
+                return frontend_exit_code
+
+            backend_exit_code = backend_process.poll()
+            if backend_exit_code is not None:
+                print(
+                    f"Backend exited with status {backend_exit_code}; stopping Streamlit.", file=sys.stderr, flush=True
+                )
+                return backend_exit_code or 1
+
+            time.sleep(1)
     finally:
         terminate_process(frontend_process)
         terminate_process(backend_process)

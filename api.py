@@ -42,16 +42,10 @@ REQUEST_METRICS_EXCLUDED_PATHS = {
 
 PROVIDER_MODELS = {
     "Groq": {"llama-3.3-70b-versatile", "llama-3.1-8b-instant"},
-    "Moonshot Kimi": {
-        "moonshot-v1-8k",
-        "moonshot-v1-32k",
-        "moonshotai/kimi-k2-thinking",
-    },
 }
 
 PROVIDER_ENV_KEYS = {
     "Groq": "GROQ_API_KEY",
-    "Moonshot Kimi": "MOONSHOT_API_KEY",
 }
 
 
@@ -103,7 +97,6 @@ class ChatRequest(BaseModel):
     model: str
     api_key: Optional[str] = None
     vector_db_path: Optional[str] = None
-    is_nvidia_key: bool = False
     routing_mode: str = "auto"
     enable_tools: bool = True
     chat_history: List[ChatTurn] = Field(default_factory=list)
@@ -265,18 +258,11 @@ def should_use_rag(query: str, chat_history: Optional[List["ChatTurn"]] = None) 
     return True
 
 
-def get_llm(provider: str, model: str, api_key: str, is_nvidia_key: bool):
-    """Instantiates the correct LLM based on the request payload."""
-    if provider == "Groq":
-        from langchain_groq import ChatGroq
+def get_llm(model: str, api_key: str):
+    """Instantiate the configured Groq model."""
+    from langchain_groq import ChatGroq
 
-        return ChatGroq(model=model, api_key=cast(Any, api_key))
-    if provider == "Moonshot Kimi":
-        from langchain_openai import ChatOpenAI
-
-        base_url = "https://integrate.api.nvidia.com/v1" if is_nvidia_key else "https://api.moonshot.cn/v1"
-        return ChatOpenAI(model=model, api_key=cast(Any, api_key), base_url=base_url)
-    raise ValueError("Invalid LLM Provider")
+    return ChatGroq(model=model, api_key=cast(Any, api_key))
 
 
 def invoke_with_retries(func):
@@ -589,7 +575,7 @@ async def chat(request: Request, payload: ChatRequest):
     started = time.perf_counter()
 
     try:
-        llm = get_llm(payload.provider, payload.model, api_key, payload.is_nvidia_key)
+        llm = get_llm(payload.model, api_key)
         history_context = _build_history_context(payload.chat_history)
         tool_used = "none"
         usage_metrics: dict[str, int] = {}
@@ -658,7 +644,7 @@ async def chat_stream(request: Request, payload: ChatRequest):
     if not api_key:
         raise HTTPException(status_code=400, detail=f"API key for {payload.provider} is missing.")
 
-    llm = get_llm(payload.provider, payload.model, api_key, payload.is_nvidia_key)
+    llm = get_llm(payload.model, api_key)
     history_context = _build_history_context(payload.chat_history)
     use_rag = _resolve_use_rag(payload)
 

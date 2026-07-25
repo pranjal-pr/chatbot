@@ -25,10 +25,30 @@ Live links:
 - App: https://huggingface.co/spaces/praanjalpradhan/chatbot
 - GitHub Actions: https://github.com/pranjal-pr/chatbot/actions
 
+## Run Locally
+
+Python 3.11 is recommended.
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+Copy-Item env_template.txt .env
+```
+
+Set `GROQ_API_KEY` in `.env`, then start both the FastAPI backend and Streamlit frontend with:
+
+```powershell
+python start.py
+```
+
+Open `http://localhost:7860`. The first startup can take roughly 30 seconds while the application imports its ML dependencies. Press `Ctrl+C` to stop both processes.
+
 ## Resume-Ready Bullets
 
 - Built and deployed an end-to-end RAG chatbot (Streamlit + FastAPI + Chroma) on Hugging Face Spaces with GitHub Actions CD.
-- Implemented multi-provider model routing, conversational memory, and agent-style tool usage (web search + calculator).
+- Implemented Groq model selection, conversational memory, and agent-style tool usage (web search + calculator).
 - Added observability, reliability, and security controls: structured logs, runtime metrics, retries/timeouts, rate limiting, and automated secret scanning.
 - Benchmarked all configured models with reproducible evaluation tooling, including optional RAGAS scoring (faithfulness + answer relevancy).
 - Productionized project quality gates with CI checks (`ruff`, `black --check`, `mypy`, `pytest`) and release versioning (`v1.0.0`).
@@ -47,7 +67,7 @@ flowchart TD
     D --> F[RAG Path]
     E --> L[Tool Agent Layer<br/>web search + calculator]
 
-    E --> G[Providers<br/>Groq / Moonshot]
+    E --> G[Groq Models]
     L --> G
     F --> H[RAG Utility<br/>rag_utility.py]
     H --> I[Chroma Vector DB]
@@ -72,13 +92,8 @@ Measured at `2026-02-27T00:05:24Z` using:
 |---|---|---|---:|---:|---:|---:|---:|
 | Groq | llama-3.3-70b-versatile | ok | 1.00 | 1.00 | 1.00 | 1698.38 | 0.00% |
 | Groq | llama-3.1-8b-instant | ok | 1.00 | 1.00 | 0.80 | 891.13 | 0.00% |
-| Moonshot Kimi | moonshot-v1-8k | not run | - | - | - | - | - |
-| Moonshot Kimi | moonshotai/kimi-k2-thinking | ok | 1.00 | 1.00 | 1.00 | 16093.45 | 0.00% |
 
 Recommended default for recruiter walkthrough: **Groq `llama-3.3-70b-versatile`** (best quality-speed balance in this run).
-
-Moonshot note for this snapshot:
-- `moonshot-v1-8k` was not included in the benchmark run.
 
 Reproducible reports:
 - [Model matrix report](./evaluation/model_matrix_latest.json)
@@ -148,8 +163,7 @@ pytest -q
   - `/upload` non-PDF validation -> `400` with clear message
 - Streamlit headless startup smoke passed (`200` response)
 
-Limitations of this local verification run:
-- True end-to-end provider completion check is external-key dependent; local Moonshot key returned `401 Invalid Authentication` in smoke test.
+Limitation of this local verification run:
 - Docker build was not validated on this machine (Docker CLI unavailable locally).
 
 ### 3) Observability
@@ -178,7 +192,6 @@ See `env_template.txt` for all settings.
 
 Core keys:
 - `GROQ_API_KEY`
-- `MOONSHOT_API_KEY`
 
 Operational controls:
 - `CHAT_RATE_LIMIT_PER_MIN`
@@ -226,9 +239,6 @@ Required Hugging Face Space identifier:
 
 Required Hugging Face Space secret:
 - `GROQ_API_KEY`
-
-Optional provider secret:
-- `MOONSHOT_API_KEY`
 
 ## Failures + Tradeoffs
 

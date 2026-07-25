@@ -10,7 +10,6 @@ from statistics import mean
 from typing import Any, Dict, List, Optional, cast
 
 from langchain_groq import ChatGroq
-from langchain_openai import ChatOpenAI
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -47,12 +46,9 @@ def load_benchmark(path: str) -> List[Dict[str, Any]]:
     return rows
 
 
-def make_llm(provider: str, model: str, api_key: str, is_nvidia_key: bool):
+def make_llm(provider: str, model: str, api_key: str):
     if provider == "Groq":
         return ChatGroq(model=model, api_key=cast(Any, api_key))
-    if provider == "Moonshot Kimi":
-        base_url = "https://integrate.api.nvidia.com/v1" if is_nvidia_key else "https://api.moonshot.cn/v1"
-        return ChatOpenAI(model=model, api_key=cast(Any, api_key), base_url=base_url)
     raise ValueError(f"Unsupported provider: {provider}")
 
 
@@ -168,7 +164,7 @@ def run_evaluation(args):
     benchmark = load_benchmark(args.benchmark_file)
     llm = None
     if args.provider and args.model and args.api_key:
-        llm = make_llm(args.provider, args.model, args.api_key, args.is_nvidia_key)
+        llm = make_llm(args.provider, args.model, args.api_key)
     if args.use_ragas and not llm:
         raise ValueError("--use-ragas requires --provider, --model, and --api-key.")
 
@@ -262,7 +258,6 @@ def parse_args():
     parser.add_argument("--provider", default="", help="Provider to run answer generation (optional).")
     parser.add_argument("--model", default="", help="Model to run answer generation (optional).")
     parser.add_argument("--api-key", default="", help="API key for provider (optional).")
-    parser.add_argument("--is-nvidia-key", action="store_true", help="Use NVIDIA endpoint for Moonshot models.")
     parser.add_argument("--use-ragas", action="store_true", help="Compute RAGAS faithfulness and answer relevancy.")
     parser.add_argument("--out-file", default="", help="Optional JSON report output path.")
     return parser.parse_args()

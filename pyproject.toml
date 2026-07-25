@@ -8,6 +8,7 @@ exclude = '''
     | \.pytest_cache
     | \.ruff_cache
     | __pycache__
+    | \.venv
     | venv
     | vector_db_.*
   )/
@@ -17,7 +18,7 @@ exclude = '''
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-exclude = [".git", ".pytest_cache", ".ruff_cache", "__pycache__", "venv", "vector_db_*"]
+exclude = [".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv", "__pycache__", "venv", "vector_db_*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
@@ -30,4 +31,4 @@ disable_error_code = ["import-untyped"]
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_unused_configs = true
-exclude = "(^venv/|^vector_db_)"
+exclude = "(^\\.venv/|^venv/|^vector_db_)"

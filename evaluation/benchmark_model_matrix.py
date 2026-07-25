@@ -53,55 +53,23 @@ def pick_latest_vector_db() -> Path:
     return sorted(candidates, key=lambda p: p.stat().st_mtime, reverse=True)[0]
 
 
-def build_model_matrix(env_values: Dict[str, str]) -> List[Dict[str, Any]]:
-    matrix = [
-        {"provider": "Groq", "model": "llama-3.3-70b-versatile", "env_key": "GROQ_API_KEY", "is_nvidia_key": False},
-        {"provider": "Groq", "model": "llama-3.1-8b-instant", "env_key": "GROQ_API_KEY", "is_nvidia_key": False},
+def build_model_matrix() -> List[Dict[str, Any]]:
+    return [
+        {"provider": "Groq", "model": "llama-3.3-70b-versatile", "env_key": "GROQ_API_KEY"},
+        {"provider": "Groq", "model": "llama-3.1-8b-instant", "env_key": "GROQ_API_KEY"},
     ]
-
-    moonshot_key = env_values.get("MOONSHOT_API_KEY", "")
-    if moonshot_key.startswith("nvapi-"):
-        matrix.extend(
-            [
-                {
-                    "provider": "Moonshot Kimi",
-                    "model": "moonshotai/kimi-k2-thinking",
-                    "env_key": "MOONSHOT_API_KEY",
-                    "is_nvidia_key": True,
-                },
-            ]
-        )
-    else:
-        matrix.extend(
-            [
-                {
-                    "provider": "Moonshot Kimi",
-                    "model": "moonshot-v1-8k",
-                    "env_key": "MOONSHOT_API_KEY",
-                    "is_nvidia_key": False,
-                },
-                {
-                    "provider": "Moonshot Kimi",
-                    "model": "moonshot-v1-32k",
-                    "env_key": "MOONSHOT_API_KEY",
-                    "is_nvidia_key": False,
-                },
-            ]
-        )
-    return matrix
 
 
 def run_retrieval_and_faithfulness(
     provider: str,
     model: str,
     api_key: str,
-    is_nvidia_key: bool,
     vector_db_path: str,
     benchmark_rows: List[Dict[str, Any]],
     top_k: int,
     use_ragas: bool,
 ) -> Dict[str, Any]:
-    llm = make_llm(provider, model, api_key, is_nvidia_key)
+    llm = make_llm(provider, model, api_key)
 
     retrieval_hits: List[float] = []
     retrieval_mrr: List[float] = []
@@ -157,7 +125,6 @@ def run_runtime_benchmark(
     provider: str,
     model: str,
     api_key: str,
-    is_nvidia_key: bool,
     prompts: List[str],
 ) -> Dict[str, Any]:
     client = TestClient(app)
@@ -172,7 +139,6 @@ def run_runtime_benchmark(
             "model": model,
             "api_key": api_key,
             "routing_mode": "chat_only",
-            "is_nvidia_key": is_nvidia_key,
             "chat_history": [],
         }
 
@@ -262,7 +228,7 @@ def main() -> None:
     env_values = parse_env_file(ENV_PATH)
     vector_db_path = str(pick_latest_vector_db())
     benchmark_rows = load_benchmark(str(BENCHMARK_PATH))
-    model_matrix = build_model_matrix(env_values)
+    model_matrix = build_model_matrix()
 
     prompts = [
         "Define machine learning in one sentence.",
@@ -278,14 +244,12 @@ def main() -> None:
         provider = item["provider"]
         model = item["model"]
         env_key = item["env_key"]
-        is_nvidia_key = item["is_nvidia_key"]
         api_key = env_values.get(env_key) or os.getenv(env_key, "")
 
         row: Dict[str, Any] = {
             "provider": provider,
             "model": model,
             "env_key": env_key,
-            "is_nvidia_key": is_nvidia_key,
             "status": "ok",
             "error": "",
         }
@@ -301,7 +265,6 @@ def main() -> None:
                 provider=provider,
                 model=model,
                 api_key=api_key,
-                is_nvidia_key=is_nvidia_key,
                 vector_db_path=vector_db_path,
                 benchmark_rows=benchmark_rows,
                 top_k=3,
@@ -311,7 +274,6 @@ def main() -> None:
                 provider=provider,
                 model=model,
                 api_key=api_key,
-                is_nvidia_key=is_nvidia_key,
                 prompts=prompts,
             )
         except Exception as exc:

@@ -26,10 +26,7 @@ HTTP_CONNECT_TIMEOUT_SEC = float(os.getenv("HTTP_CONNECT_TIMEOUT_SEC", "6"))
 HTTP_READ_TIMEOUT_CHAT_SEC = float(os.getenv("HTTP_READ_TIMEOUT_CHAT_SEC", "180"))
 HTTP_READ_TIMEOUT_UPLOAD_SEC = float(os.getenv("HTTP_READ_TIMEOUT_UPLOAD_SEC", "360"))
 
-PROVIDER_OPTIONS = ["Groq", "Moonshot Kimi"]
 GROQ_MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-MOONSHOT_MODELS = ["moonshot-v1-8k", "moonshot-v1-32k"]
-MOONSHOT_NVIDIA_MODELS = ["moonshotai/kimi-k2-thinking"]
 ROUTING_OPTIONS = ["Auto", "Chat only", "RAG only"]
 ROUTING_MODE_MAP = {"Auto": "auto", "Chat only": "chat_only", "RAG only": "rag_only"}
 TOOL_LABELS = {
@@ -80,18 +77,6 @@ def parse_backend_error(response: requests.Response) -> str:
     except ValueError:
         pass
     return response.text or f"HTTP {response.status_code}"
-
-
-def resolve_provider_config(provider: str):
-    if provider == "Groq":
-        groq_key = os.getenv("GROQ_API_KEY") or os.getenv("GR0Q_API_KEY")
-        return groq_key, False, "Model", GROQ_MODELS
-
-    moonshot_key = os.getenv("MOONSHOT_API_KEY")
-    is_nvidia_key = bool(moonshot_key and moonshot_key.startswith("nvapi-"))
-    if is_nvidia_key:
-        return moonshot_key, True, "Model (NVIDIA)", MOONSHOT_NVIDIA_MODELS
-    return moonshot_key, False, "Model", MOONSHOT_MODELS
 
 
 def load_logo_data_uri() -> str | None:
@@ -1423,9 +1408,10 @@ logo_markup = (
 
 with st.sidebar:
     st.markdown("### Session Controls")
-    provider = st.selectbox("Provider", PROVIDER_OPTIONS)
-    api_key, is_nvidia_key, model_label, model_options = resolve_provider_config(provider)
-    selected_model = st.selectbox(model_label, model_options)
+    provider = "Groq"
+    api_key = os.getenv("GROQ_API_KEY") or os.getenv("GR0Q_API_KEY")
+    st.caption("Provider: Groq")
+    selected_model = st.selectbox("Model", GROQ_MODELS)
     routing_mode_label = st.selectbox(
         "Routing",
         ROUTING_OPTIONS,
@@ -1649,7 +1635,6 @@ if st.session_state.pending_prompt:
             "model": selected_model,
             "api_key": api_key,
             "vector_db_path": st.session_state.vector_db_path,
-            "is_nvidia_key": is_nvidia_key,
             "routing_mode": routing_mode,
             "enable_tools": enable_tools,
             "chat_history": history_payload,
