@@ -1044,10 +1044,6 @@ st.markdown(
         backdrop-filter: none;
     }
 
-    [data-testid="stChatInput"] > div > div:last-child > div:first-child {
-        display: none !important;
-    }
-
     [data-testid="stElementContainer"].st-key-chat_prompt {
         background: transparent !important;
         box-shadow: none !important;
@@ -1087,11 +1083,6 @@ st.markdown(
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
-    }
-
-    [data-testid="stChatInput"] > div > div:last-child > div:nth-child(3) {
-        flex: 1 1 auto;
-        min-width: 0;
     }
 
     [data-testid="stChatInput"] [data-baseweb="textarea"]:focus-within {
